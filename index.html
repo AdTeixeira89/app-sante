@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=3" />
+<title>Bússola Saúde</title>
+<meta name="theme-color" content="#1B2A4A" />
+<link rel="manifest" href="./manifest.json" />
+<link rel="icon" href="./icon-192.png" />
+<link rel="apple-touch-icon" href="./icon-192.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+
+<!-- ===================== MODO PRINCIPAL (pai) ===================== -->
+<main id="view-pere" class="view">
+  <header class="pere-header">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">◎</span>
+      <span class="brand-name">Bússola Saúde</span>
+    </div>
+    <button id="btn-open-aidant" class="icon-btn" aria-label="Área do cuidador">⚙</button>
+  </header>
+
+  <section class="ticket" id="next-ticket" aria-live="polite">
+    <!-- preenchido por JS -->
+  </section>
+
+  <section class="today-list" id="today-meds" aria-live="polite">
+    <!-- preenchido por JS -->
+  </section>
+
+  <nav class="big-nav">
+    <button class="big-btn" data-open="rdv">
+      <span class="big-btn-icon" aria-hidden="true">📅</span>
+      <span>As minhas consultas</span>
+    </button>
+    <button class="big-btn" data-open="docs">
+      <span class="big-btn-icon" aria-hidden="true">📄</span>
+      <span>Os meus documentos</span>
+    </button>
+    <button class="big-btn" data-open="meds">
+      <span class="big-btn-icon" aria-hidden="true">💊</span>
+      <span>Os meus medicamentos</span>
+    </button>
+  </nav>
+</main>
+
+<!-- ===================== LISTA DE CONSULTAS (pai) ===================== -->
+<section id="view-rdv-list" class="view sub-view hidden">
+  <header class="sub-header">
+    <button class="back-btn" data-back="pere" aria-label="Voltar">←</button>
+    <h1>As minhas consultas</h1>
+  </header>
+  <div id="rdv-list-content" class="content-scroll"></div>
+</section>
+
+<!-- ===================== DOCUMENTOS (pai) ===================== -->
+<section id="view-docs" class="view sub-view hidden">
+  <header class="sub-header">
+    <button class="back-btn" data-back="pere" aria-label="Voltar">←</button>
+    <h1>Os meus documentos</h1>
+  </header>
+  <div class="content-scroll">
+    <button class="add-btn" id="btn-add-doc">+ Adicionar documento</button>
+    <div id="docs-list-content"></div>
+  </div>
+</section>
+
+<!-- ===================== MEDICAMENTOS (pai) ===================== -->
+<section id="view-meds" class="view sub-view hidden">
+  <header class="sub-header">
+    <button class="back-btn" data-back="pere" aria-label="Voltar">←</button>
+    <h1>Os meus medicamentos</h1>
+  </header>
+  <div id="meds-list-content" class="content-scroll"></div>
+</section>
+
+<!-- ===================== PIN CUIDADOR ===================== -->
+<section id="view-pin" class="view sub-view hidden">
+  <header class="sub-header">
+    <button class="back-btn" data-back="pere" aria-label="Voltar">←</button>
+    <h1>Área do cuidador</h1>
+  </header>
+  <div class="pin-box">
+    <p class="pin-hint">Introduza o código (4 dígitos) para gerir consultas, documentos e medicamentos.</p>
+    <input id="pin-input" class="pin-input" type="password" inputmode="numeric" maxlength="4" placeholder="••••" />
+    <button id="pin-submit" class="primary-btn">Entrar</button>
+    <p id="pin-error" class="pin-error hidden">Código incorreto.</p>
+    <p class="pin-default-note">Código por defeito: <strong>1234</strong> (pode ser alterado na área do cuidador).</p>
+  </div>
+</section>
+
+<!-- ===================== ÁREA DO CUIDADOR ===================== -->
+<section id="view-aidant" class="view sub-view hidden">
+  <header class="sub-header aidant-header">
+    <button class="back-btn" data-back="pere" aria-label="Sair">←</button>
+    <h1>Área do cuidador</h1>
+  </header>
+
+  <div class="aidant-tabs">
+    <button class="tab-btn active" data-tab="tab-rdv">Consultas</button>
+    <button class="tab-btn" data-tab="tab-meds">Medicamentos</button>
+    <button class="tab-btn" data-tab="tab-historico">Histórico</button>
+    <button class="tab-btn" data-tab="tab-reglages">Definições</button>
+  </div>
+
+  <div id="tab-rdv" class="tab-panel content-scroll">
+    <button class="add-btn" id="btn-add-rdv">+ Adicionar consulta</button>
+    <div id="aidant-rdv-list"></div>
+  </div>
+
+  <div id="tab-meds" class="tab-panel content-scroll hidden">
+    <button class="add-btn" id="btn-add-med">+ Adicionar medicamento</button>
+    <div id="aidant-meds-list"></div>
+  </div>
+
+  <div id="tab-historico" class="tab-panel content-scroll hidden">
+    <p class="muted">Últimos 7 dias. Verde = tomado, cinza = saltado, vermelho = esquecido.</p>
+    <div id="historico-list"></div>
+  </div>
+
+  <div id="tab-reglages" class="tab-panel content-scroll hidden">
+    <div class="settings-card">
+      <h3>Família (sincronização)</h3>
+      <p class="muted">Este código liga este aparelho aos outros da família. Usa o mesmo código nos telemóveis do Papa e dos filhos para partilhar os mesmos dados em tempo real.</p>
+      <div class="family-code-box">
+        <span id="family-code-value">------</span>
+        <button id="btn-copy-code" class="secondary-btn small">Copiar</button>
+      </div>
+      <label>Ligar a outro código
+        <input id="join-family-code" type="text" maxlength="8" placeholder="Ex.: A1B2C3" style="text-transform:uppercase;" />
+      </label>
+      <button id="btn-join-family" class="secondary-btn">Ligar a este código</button>
+      <label>Nome deste aparelho (opcional)
+        <input id="device-label" type="text" placeholder="Ex.: Telemóvel do Papa" />
+      </label>
+    </div>
+    <div class="settings-card">
+      <h3>Estado da família</h3>
+      <p class="muted">Última atividade de cada aparelho ligado a este código.</p>
+      <div id="family-presence-list"></div>
+    </div>
+    <div class="settings-card">
+      <h3>Código PIN do cuidador</h3>
+      <p class="muted">Altere o código de 4 dígitos usado para entrar nesta área.</p>
+      <input id="new-pin" class="pin-input small" type="text" inputmode="numeric" maxlength="4" placeholder="Novo código" />
+      <button id="save-pin" class="secondary-btn">Guardar código</button>
+    </div>
+    <div class="settings-card">
+      <h3>Notificações</h3>
+      <p class="muted">Ative as notificações neste dispositivo para receber lembretes de consultas e medicamentos.</p>
+      <button id="btn-enable-notif" class="secondary-btn">Ativar notificações</button>
+      <p id="notif-status" class="muted"></p>
+    </div>
+    <div class="settings-card">
+      <h3>Cópia de segurança dos dados</h3>
+      <p class="muted">Todos os dados ficam guardados apenas neste dispositivo. Exporte uma cópia regularmente.</p>
+      <button id="btn-export" class="secondary-btn">Exportar dados</button>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== FORMULÁRIO CONSULTA ===================== -->
+<div id="modal-rdv" class="modal hidden">
+  <div class="modal-card">
+    <h2 id="rdv-modal-title">Nova consulta</h2>
+    <label>Médico / especialidade
+      <input id="f-rdv-medecin" type="text" placeholder="Ex.: Dr. Silva, cardiologista" />
+    </label>
+    <label>Motivo da consulta
+      <input id="f-rdv-motif" type="text" placeholder="Ex.: controlo da tensão" />
+    </label>
+    <label>Data
+      <input id="f-rdv-date" type="date" />
+    </label>
+    <label>Hora
+      <input id="f-rdv-heure" type="time" />
+    </label>
+    <label>Local (opcional)
+      <input id="f-rdv-lieu" type="text" placeholder="Ex.: Clínica, Rua da Paz, 12" />
+    </label>
+    <label>Foto do documento principal (convocatória, receita...)
+      <input id="f-rdv-photo" type="file" accept="image/*,application/pdf" />
+    </label>
+    <div id="f-rdv-photo-preview" class="photo-preview hidden"></div>
+
+    <label>Exames anexados a esta consulta</label>
+    <div id="f-rdv-exames-list" class="anexos-list"></div>
+    <input id="f-rdv-exame-input" type="file" accept="image/*,application/pdf" class="hidden" />
+    <button id="f-rdv-add-exame" type="button" class="ghost-btn small">+ Anexar exame</button>
+
+    <label>Perguntas para o médico (opcional)
+      <textarea id="f-rdv-perguntas" rows="3" placeholder="Ex.: Perguntar sobre os efeitos secundários do novo medicamento"></textarea>
+    </label>
+
+    <div class="modal-actions">
+      <button id="f-rdv-delete" class="danger-btn hidden">Eliminar</button>
+      <button id="f-rdv-cancel" class="ghost-btn">Cancelar</button>
+      <button id="f-rdv-save" class="primary-btn">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== FORMULÁRIO MEDICAMENTO ===================== -->
+<div id="modal-med" class="modal hidden">
+  <div class="modal-card">
+    <h2 id="med-modal-title">Novo medicamento</h2>
+    <label>Nome do medicamento
+      <input id="f-med-nom" type="text" placeholder="Ex.: Ben-u-ron 1000mg" />
+    </label>
+    <label>Indicação (opcional)
+      <input id="f-med-consigne" type="text" placeholder="Ex.: tomar com um copo de água" />
+    </label>
+    <label>Foto da caixa (opcional, ajuda a reconhecer o medicamento)
+      <input id="f-med-photo" type="file" accept="image/*" />
+    </label>
+    <div id="f-med-photo-preview" class="photo-preview hidden"></div>
+    <label>Horas da toma (uma ou várias)</label>
+    <div id="f-med-heures-list" class="heures-list"></div>
+    <button id="f-med-add-heure" class="ghost-btn small">+ Adicionar hora</button>
+    <div class="modal-actions">
+      <button id="f-med-delete" class="danger-btn hidden">Eliminar</button>
+      <button id="f-med-cancel" class="ghost-btn">Cancelar</button>
+      <button id="f-med-save" class="primary-btn">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== FORMULÁRIO DOCUMENTO ===================== -->
+<div id="modal-doc" class="modal hidden">
+  <div class="modal-card">
+    <h2 id="doc-modal-title">Novo documento</h2>
+    <label>Título
+      <input id="f-doc-titulo" type="text" placeholder="Ex.: Análises ao sangue, Fevereiro" />
+    </label>
+    <label>Tipo
+      <select id="f-doc-tipo">
+        <option value="Receita">Receita</option>
+        <option value="Exame">Exame / Resultado</option>
+        <option value="Outro">Outro</option>
+      </select>
+    </label>
+    <label>Foto ou ficheiro
+      <input id="f-doc-file" type="file" accept="image/*,application/pdf" />
+    </label>
+    <div id="f-doc-file-preview" class="photo-preview hidden"></div>
+    <div class="modal-actions">
+      <button id="f-doc-delete" class="danger-btn hidden">Eliminar</button>
+      <button id="f-doc-cancel" class="ghost-btn">Cancelar</button>
+      <button id="f-doc-save" class="primary-btn">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script type="module" src="./app.js"></script>
+</body>
+</html>
