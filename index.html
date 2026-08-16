@@ -24,6 +24,8 @@
     <button id="btn-open-aidant" class="icon-btn" aria-label="Área do cuidador">⚙</button>
   </header>
 
+  <div class="home-greeting" id="home-greeting"></div>
+
   <section class="ticket" id="next-ticket" aria-live="polite">
     <!-- preenchido por JS -->
   </section>
@@ -124,6 +126,30 @@
 
   <div id="tab-reglages" class="tab-panel content-scroll hidden">
     <div class="settings-card">
+      <h3>Perfil do paciente</h3>
+      <p class="muted">Usado para personalizar o ecrã principal e como referência rápida em consultas.</p>
+      <label>Nome
+        <input id="f-perfil-nome" type="text" placeholder="Ex.: José" />
+      </label>
+      <div class="perfil-grid">
+        <label>Sexo
+          <select id="f-perfil-sexo">
+            <option value="">—</option>
+            <option value="Masculino">Masculino</option>
+            <option value="Feminino">Feminino</option>
+            <option value="Outro">Outro</option>
+          </select>
+        </label>
+        <label>Idade
+          <input id="f-perfil-idade" type="number" min="0" max="130" placeholder="Ex.: 70" />
+        </label>
+        <label>Peso (kg)
+          <input id="f-perfil-peso" type="number" min="0" max="400" step="0.1" placeholder="Ex.: 78" />
+        </label>
+      </div>
+      <button id="save-perfil" class="secondary-btn">Guardar perfil</button>
+    </div>
+    <div class="settings-card">
       <h3>Família (sincronização)</h3>
       <p class="muted">Este código liga este aparelho aos outros da família. Usa o mesmo código nos telemóveis do Papa e dos filhos para partilhar os mesmos dados em tempo real.</p>
       <div class="family-code-box">
@@ -210,6 +236,9 @@
     <h2 id="med-modal-title">Novo medicamento</h2>
     <label>Nome do medicamento
       <input id="f-med-nom" type="text" placeholder="Ex.: Ben-u-ron 1000mg" />
+    </label>
+    <label>Para que serve (opcional)
+      <input id="f-med-trata" type="text" placeholder="Ex.: Diabetes, Tensão arterial" />
     </label>
     <label>Indicação (opcional)
       <input id="f-med-consigne" type="text" placeholder="Ex.: tomar com um copo de água" />

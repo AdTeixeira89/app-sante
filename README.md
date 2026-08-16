@@ -19,6 +19,8 @@ Aplicação web (PWA) para ajudar um familiar a organizar-se com as consultas m�
 - **Suivi des médicaments à 3 états** : à chaque rappel, ton père choisit « Saltar » / « Tomado à l'heure prévue » / « Tomado agora » (avec l'heure réelle affichée). Le rendez-vous devient vert dès validation ; s'il ne répond pas 30 minutes après l'heure, la carte passe en rouge « esquecido »
 - **Historique des 7 derniers jours** consultable dans l'espace aidant (onglet « Histórico »), avec code couleur : vert = pris, gris = sauté, rouge = oublié
 - **Partager et imprimer chaque document** depuis l'écran Documentos (bouton de partage natif du téléphone, ou impression directe)
+- **Perfil do paciente** : nome, sexo, idade e peso, éditáveis na área do cuidador — o nome aparece como saudação personalizada no ecrã principal ("Olá, José 👋")
+- **Indicação de cada medicamento** : campo "Para que serve" (ex.: Diabetes, Tensão arterial), visível na lista de medicamentos
 - **Synchronisation multi-appareils (Firebase)** : les données sont partagées en temps réel entre les téléphones du Papa et des enfants, via un « code de famille » à 6 caractères (voir section dédiée ci-dessous)
 - **État de la famille** : chaque appareil affiche la dernière activité des autres (ex. « Telemóvel do Papa — há 5 min »)
 - **Alerte discrète pour les aidants** : si une prise n'est pas confirmée 30 minutes après l'heure prévue, les appareils déjà entrés dans l'espace aidant reçoivent une notification locale

@@ -56,7 +56,7 @@ function familyCollection(name) {
 }
 
 /* ===================== ESTADO EM MEMÓRIA ===================== */
-let state = { rdvs: [], meds: [], docs: [], medLog: {}, pin: "1234" };
+let state = { rdvs: [], meds: [], docs: [], medLog: {}, pin: "1234", perfil: {} };
 let familyPresence = [];
 let unsubscribers = [];
 
@@ -108,6 +108,11 @@ function startListening() {
 
   unsubscribers.push(onSnapshot(familyRef("meta", "settings"), (snap) => {
     if (snap.exists()) state.pin = snap.data().pin || "1234";
+    onDataChanged();
+  }, handleFirestoreError));
+
+  unsubscribers.push(onSnapshot(familyRef("meta", "profile"), (snap) => {
+    state.perfil = snap.exists() ? snap.data() : {};
     onDataChanged();
   }, handleFirestoreError));
 
@@ -246,8 +251,18 @@ $$(".tab-btn").forEach((btn) => {
 
 /* ===================== ECRÃ PRINCIPAL ===================== */
 function renderHome() {
+  renderGreeting();
   renderNextTicket();
   renderTodayMeds();
+}
+
+function renderGreeting() {
+  const el = $("#home-greeting");
+  const nome = state.perfil && state.perfil.nome;
+  const dateLabel = capitalize(new Date().toLocaleDateString("pt-PT", { weekday: "long", day: "numeric", month: "long" }));
+  el.innerHTML = nome
+    ? `Olá, ${escapeHTML(nome)} 👋<span class="greeting-date">${dateLabel}</span>`
+    : `<span class="greeting-date">${dateLabel}</span>`;
 }
 
 function getUpcomingRdvs() {
@@ -641,6 +656,7 @@ function renderMedsList() {
     <div class="rdv-card">
       ${m.foto ? `<img class="doc-thumb" src="${m.foto}" alt="Caixa de ${escapeHTML(m.nom)}" />` : ""}
       <div class="rdv-card-medecin">${escapeHTML(m.nom)}</div>
+      ${m.trata ? `<div class="rdv-card-lieu">Para: ${escapeHTML(m.trata)}</div>` : ""}
       ${m.consigne ? `<div class="rdv-card-motif">${escapeHTML(m.consigne)}</div>` : ""}
       <div class="rdv-card-lieu">Horários: ${(m.heures || []).join(", ") || "—"}</div>
     </div>
@@ -706,6 +722,7 @@ function renderAidant() {
   renderAidantRdvs();
   renderAidantMeds();
   renderHistorico();
+  fillPerfilForm();
   $("#notif-status").textContent = notifStatusLabel();
 }
 
@@ -743,7 +760,7 @@ function renderAidantMeds() {
       ${m.foto ? `<img class="med-thumb" src="${m.foto}" alt="Caixa de ${escapeHTML(m.nom)}" />` : ""}
       <div class="aidant-item-main">
         <strong>${escapeHTML(m.nom)}</strong>
-        <span>${(m.heures || []).join(", ") || "Sem horário"}</span>
+        <span>${m.trata ? escapeHTML(m.trata) + " · " : ""}${(m.heures || []).join(", ") || "Sem horário"}</span>
       </div>
       <button class="edit-link" data-edit-med="${m.id}">Editar</button>
     </div>
@@ -886,6 +903,7 @@ function openMedModal(id) {
   const m = id ? state.meds.find((x) => x.id === id) : null;
   $("#med-modal-title").textContent = id ? "Editar medicamento" : "Novo medicamento";
   $("#f-med-nom").value = m ? m.nom : "";
+  $("#f-med-trata").value = m ? (m.trata || "") : "";
   $("#f-med-consigne").value = m ? m.consigne : "";
   $("#f-med-photo").value = "";
   const medPreview = $("#f-med-photo-preview");
@@ -940,6 +958,7 @@ $("#f-med-save").addEventListener("click", () => {
   const record = {
     id: editingMedId || uid(),
     nom,
+    trata: $("#f-med-trata").value.trim(),
     consigne: $("#f-med-consigne").value.trim(),
     foto: fotoValue || null,
     heures
@@ -986,6 +1005,28 @@ $("#btn-export").addEventListener("click", () => {
   a.download = "bussola-saude-exportacao.json";
   a.click();
   URL.revokeObjectURL(url);
+});
+
+/* ---------- Perfil do paciente ---------- */
+function fillPerfilForm() {
+  const p = state.perfil || {};
+  $("#f-perfil-nome").value = p.nome || "";
+  $("#f-perfil-sexo").value = p.sexo || "";
+  $("#f-perfil-idade").value = p.idade || "";
+  $("#f-perfil-peso").value = p.peso || "";
+}
+
+$("#save-perfil").addEventListener("click", () => {
+  const record = {
+    nome: $("#f-perfil-nome").value.trim(),
+    sexo: $("#f-perfil-sexo").value,
+    idade: $("#f-perfil-idade").value ? Number($("#f-perfil-idade").value) : null,
+    peso: $("#f-perfil-peso").value ? Number($("#f-perfil-peso").value) : null
+  };
+  state.perfil = record;
+  renderGreeting();
+  fsSetItem("meta", "profile", record, true);
+  showToast("Perfil guardado.");
 });
 
 /* ---------- Família (código de sincronização) ---------- */
