@@ -76,7 +76,6 @@ function onDataChanged() {
   renderTodayMeds();
   renderRdvList();
   renderDocsList();
-  renderMedsList();
   renderAidantRdvs();
   renderAidantMeds();
   renderHistorico();
@@ -212,9 +211,13 @@ $$("[data-open]").forEach((btn) => {
   btn.addEventListener("click", () => {
     const target = btn.dataset.open;
     if (target === "medshoje") { renderTodayMeds(); showView("view-meds-hoje"); }
-    if (target === "rdv") { renderRdvList(); showView("view-rdv-list"); }
+    if (target === "rdv") {
+      $$("[data-rdvtab]").forEach((b) => b.classList.remove("active"));
+      $$('[data-rdvtab="proximas"]').forEach((b) => b.classList.add("active"));
+      renderRdvList("proximas");
+      showView("view-rdv-list");
+    }
     if (target === "docs") { renderDocsList(); showView("view-docs"); }
-    if (target === "meds") { renderMedsList(); showView("view-meds"); }
   });
 });
 
@@ -271,15 +274,35 @@ function renderGreeting() {
     : `<span class="greeting-date">${dateLabel}</span>`;
 }
 
-function mapsLink(address) {
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+function showNavChoice(address) {
+  const enc = encodeURIComponent(address);
+  const el = $("#nav-links");
+  el.innerHTML = `
+    <a class="emergencia-contact-btn" href="https://www.google.com/maps/search/?api=1&query=${enc}" target="_blank" rel="noopener">🗺️ Google Maps</a>
+    <a class="emergencia-contact-btn" href="https://maps.apple.com/?q=${enc}" target="_blank" rel="noopener">📍 Plans (Apple Maps)</a>
+    <a class="emergencia-contact-btn" href="https://waze.com/ul?q=${enc}&navigate=yes" target="_blank" rel="noopener">🚗 Waze</a>
+  `;
+  $("#modal-nav").classList.remove("hidden");
 }
+
+// Delegação de eventos: qualquer botão com data-nav abre a escolha de mapa
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-nav]");
+  if (btn) showNavChoice(btn.dataset.nav);
+});
 
 function getUpcomingRdvs() {
   const now = new Date();
   return state.rdvs
     .filter((r) => new Date(r.date + "T" + (r.heure || "00:00")) >= now.setHours(0, 0, 0, 0) || r.date >= todayStr())
     .sort((a, b) => (a.date + a.heure).localeCompare(b.date + b.heure));
+}
+
+function getPastRdvs() {
+  const today = todayStr();
+  return state.rdvs
+    .filter((r) => r.date < today)
+    .sort((a, b) => (b.date + b.heure).localeCompare(a.date + a.heure));
 }
 
 function renderNextTicket() {
@@ -298,7 +321,8 @@ function renderNextTicket() {
       <div><span>Data</span>${capitalize(formatDatePT(r.date))}</div>
       <div><span>Hora</span>${r.heure || "—"}</div>
     </div>
-    ${r.lieu ? `<a class="rdv-card-address" style="color:var(--amber);margin-top:14px;" href="${mapsLink(r.lieu)}" target="_blank" rel="noopener">🗺️ Ver itinerário — ${escapeHTML(r.lieu)}</a>` : ""}
+    ${r.lieu ? `<button class="rdv-card-address" style="color:var(--amber);margin-top:14px;background:none;border:none;padding:0;font-family:inherit;cursor:pointer;" data-nav="${escapeHTML(r.lieu)}">🗺️ Ver itinerário — ${escapeHTML(r.lieu)}</button>` : ""}
+    ${r.precisaLevarExames && r.levarExamesTexto ? `<div class="rdv-card-levar" style="margin-top:10px;">📎 <strong>Levar:</strong> ${escapeHTML(r.levarExamesTexto)}</div>` : ""}
   `;
 }
 
@@ -483,15 +507,25 @@ function renderTodayMeds() {
 }
 
 /* ===================== LISTA DE CONSULTAS (leitura) ===================== */
-function renderRdvList() {
+function renderRdvList(mode) {
   const el = $("#rdv-list-content");
-  const list = getUpcomingRdvs();
+  const activeTab = $('[data-rdvtab].active');
+  const effectiveMode = mode || (activeTab ? activeTab.dataset.rdvtab : "proximas");
+  const list = effectiveMode === "passadas" ? getPastRdvs() : getUpcomingRdvs();
   if (list.length === 0) {
-    el.innerHTML = `<div class="empty-state">Ainda não há consultas registadas.</div>`;
+    el.innerHTML = `<div class="empty-state">${effectiveMode === "passadas" ? "Sem consultas passadas." : "Ainda não há consultas registadas."}</div>`;
     return;
   }
   el.innerHTML = list.map(rdvCardHTML).join("");
 }
+
+$$("[data-rdvtab]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    $$("[data-rdvtab]").forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+    renderRdvList(btn.dataset.rdvtab);
+  });
+});
 
 function rdvCardHTML(r) {
   const exames = r.exames || [];
@@ -500,8 +534,9 @@ function rdvCardHTML(r) {
       <div class="rdv-card-date">${capitalize(formatDatePT(r.date))}${r.heure ? " · " + r.heure : ""}</div>
       <div class="rdv-card-medecin">${escapeHTML(r.medecin || "Consulta")}</div>
       ${r.motif ? `<div class="rdv-card-motif">${escapeHTML(r.motif)}</div>` : ""}
-      ${r.lieu ? `<a class="rdv-card-address" href="${mapsLink(r.lieu)}" target="_blank" rel="noopener">🗺️ ${escapeHTML(r.lieu)}</a>` : ""}
+      ${r.lieu ? `<button class="rdv-card-address" style="background:none;border:none;padding:0;font-family:inherit;cursor:pointer;" data-nav="${escapeHTML(r.lieu)}">🗺️ ${escapeHTML(r.lieu)}</button>` : ""}
       ${r.perguntas ? `<div class="rdv-card-perguntas">📝 <strong>Perguntas ao médico:</strong> ${escapeHTML(r.perguntas)}</div>` : ""}
+      ${r.precisaLevarExames && r.levarExamesTexto ? `<div class="rdv-card-levar">📎 <strong>Levar:</strong> ${escapeHTML(r.levarExamesTexto)}</div>` : ""}
       ${r.photo ? fileThumbHTML(r.photo, "Documento da consulta") : ""}
       ${exames.length ? `<div class="rdv-card-lieu">${exames.length} exame(s) anexado(s)</div>
         <div class="anexos-list">${exames.map((ex) => `<div class="anexo-chip">${isPdfData(ex.data) ? "📄" : `<img src="${ex.data}" alt="${escapeHTML(ex.nome || "Exame")}" />`}</div>`).join("")}</div>` : ""}
@@ -512,14 +547,14 @@ function rdvCardHTML(r) {
 /* ===================== DOCUMENTOS (leitura + adicionar) ===================== */
 function getAllDocEntries() {
   const avulsos = state.docs.map((d) => ({
-    kind: "doc", id: d.id, data: d.data, titulo: d.titulo, subtitulo: d.tipo, file: d.file
+    kind: "doc", id: d.id, data: d.data, titulo: d.titulo, subtitulo: d.tipo, categoria: d.tipo || "Outro", file: d.file
   }));
 
   const rdvPrincipais = state.rdvs
     .filter((r) => r.photo)
     .map((r) => ({
       kind: "rdv", id: r.id, data: r.date, titulo: r.medecin || "Documento da consulta",
-      subtitulo: r.motif || "", file: r.photo
+      subtitulo: r.motif || "", categoria: "Convocatória", file: r.photo
     }));
 
   const rdvExames = [];
@@ -527,7 +562,7 @@ function getAllDocEntries() {
     (r.exames || []).forEach((ex) => {
       rdvExames.push({
         kind: "rdv", id: r.id, data: r.date, titulo: ex.nome || "Exame anexado",
-        subtitulo: r.medecin ? `Consulta: ${r.medecin}` : "", file: ex.data
+        subtitulo: r.medecin ? `Consulta: ${r.medecin}` : "", categoria: "Resultado", file: ex.data
       });
     });
   });
@@ -536,16 +571,27 @@ function getAllDocEntries() {
 }
 
 let lastDocEntries = [];
+let currentDocTab = "todos";
+
+$$("[data-doctab]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    $$("[data-doctab]").forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+    currentDocTab = btn.dataset.doctab;
+    renderDocsList();
+  });
+});
 
 function renderDocsList() {
   const el = $("#docs-list-content");
   const all = getAllDocEntries();
-  lastDocEntries = all;
-  if (all.length === 0) {
-    el.innerHTML = `<div class="empty-state">Ainda não há documentos. Toca em "Adicionar documento" ou junta uma foto a uma consulta.</div>`;
+  const filtered = currentDocTab === "todos" ? all : all.filter((d) => d.categoria === currentDocTab);
+  lastDocEntries = filtered;
+  if (filtered.length === 0) {
+    el.innerHTML = `<div class="empty-state">${currentDocTab === "todos" ? 'Ainda não há documentos. Toca em "Adicionar documento" ou junta uma foto a uma consulta.' : "Nenhum documento nesta categoria."}</div>`;
     return;
   }
-  el.innerHTML = all.map((d, i) => `
+  el.innerHTML = filtered.map((d, i) => `
     <div class="doc-card">
       ${d.data ? `<div class="rdv-card-date">${capitalize(formatDatePT(d.data))}</div>` : ""}
       <div class="rdv-card-medecin">${escapeHTML(d.titulo)}</div>
@@ -682,32 +728,6 @@ $("#f-doc-delete").addEventListener("click", () => {
 });
 
 /* ===================== MEDICAMENTOS (leitura) ===================== */
-function renderMedsList() {
-  const el = $("#meds-list-content");
-  if (state.meds.length === 0) {
-    el.innerHTML = `<div class="empty-state">Ainda não há medicamentos registados.</div>`;
-    return;
-  }
-  el.innerHTML = state.meds.map((m) => `
-    <div class="rdv-card">
-      <div style="display:flex; align-items:center; gap:12px; justify-content:space-between;">
-        <div style="display:flex; align-items:center; gap:12px;">
-          ${m.foto ? `<img class="med-thumb" src="${m.foto}" alt="Caixa de ${escapeHTML(m.nom)}" />` : ""}
-          <div class="rdv-card-medecin">${escapeHTML(m.nom)}</div>
-        </div>
-        <button class="med-info-btn" data-info-med="${m.id}" aria-label="Mais informação">ℹ️</button>
-      </div>
-      ${m.trata ? `<div class="rdv-card-lieu">Para: ${escapeHTML(m.trata)}</div>` : ""}
-      ${m.consigne ? `<div class="rdv-card-motif">${escapeHTML(m.consigne)}</div>` : ""}
-      <div class="rdv-card-lieu">Horários: ${(m.heures || []).join(", ") || "—"}</div>
-    </div>
-  `).join("");
-
-  el.querySelectorAll("[data-info-med]").forEach((btn) => {
-    btn.addEventListener("click", () => showMedInfo(btn.dataset.infoMed));
-  });
-}
-
 function showMedInfo(medId) {
   const m = state.meds.find((x) => x.id === medId);
   if (!m) return;
@@ -715,11 +735,6 @@ function showMedInfo(medId) {
   let html = "";
   html += `<div class="info-block"><strong>Para que serve</strong>${m.trata ? escapeHTML(m.trata) : "Não indicado — pergunta ao médico ou farmacêutico."}</div>`;
   if (m.consigne) html += `<div class="info-block"><strong>Como tomar</strong>${escapeHTML(m.consigne)}</div>`;
-  if (m.precaucoes) {
-    html += `<div class="info-block"><strong>Precauções</strong><div class="info-precaucoes">${escapeHTML(m.precaucoes)}</div></div>`;
-  } else {
-    html += `<div class="info-block"><strong>Precauções</strong>Sem informação registada. Confirma sempre com o médico ou farmacêutico antes de misturar com álcool ou outros medicamentos.</div>`;
-  }
   $("#info-modal-body").innerHTML = html;
   $("#modal-info").classList.remove("hidden");
 }
@@ -851,6 +866,9 @@ function openRdvModal(id) {
   $("#f-rdv-heure").value = r ? r.heure : "";
   $("#f-rdv-lieu").value = r ? r.lieu : "";
   $("#f-rdv-perguntas").value = r ? (r.perguntas || "") : "";
+  $("#f-rdv-levar-exames").checked = r ? !!r.precisaLevarExames : false;
+  $("#f-rdv-levar-exames-texto").value = r ? (r.levarExamesTexto || "") : "";
+  $("#f-rdv-levar-exames-detail").classList.toggle("hidden", !($("#f-rdv-levar-exames").checked));
   $("#f-rdv-photo").value = "";
   const preview = $("#f-rdv-photo-preview");
   if (r && r.photo) {
@@ -873,6 +891,10 @@ function closeRdvModal() {
   editingRdvId = null;
   currentExames = [];
 }
+
+$("#f-rdv-levar-exames").addEventListener("change", (e) => {
+  $("#f-rdv-levar-exames-detail").classList.toggle("hidden", !e.target.checked);
+});
 
 $("#f-rdv-photo").addEventListener("change", async (e) => {
   const file = e.target.files[0];
@@ -928,6 +950,8 @@ $("#f-rdv-save").addEventListener("click", () => {
     heure: $("#f-rdv-heure").value,
     lieu: $("#f-rdv-lieu").value.trim(),
     perguntas: $("#f-rdv-perguntas").value.trim(),
+    precisaLevarExames: $("#f-rdv-levar-exames").checked,
+    levarExamesTexto: $("#f-rdv-levar-exames-texto").value.trim(),
     photo: photoValue || null,
     exames: currentExames
   };
@@ -968,7 +992,6 @@ function openMedModal(id) {
   $("#med-modal-title").textContent = id ? "Editar medicamento" : "Novo medicamento";
   $("#f-med-nom").value = m ? m.nom : "";
   $("#f-med-trata").value = m ? (m.trata || "") : "";
-  $("#f-med-precaucoes").value = m ? (m.precaucoes || "") : "";
   $("#f-med-consigne").value = m ? m.consigne : "";
   $("#f-med-photo").value = "";
   const medPreview = $("#f-med-photo-preview");
@@ -1024,7 +1047,6 @@ $("#f-med-save").addEventListener("click", () => {
     id: editingMedId || uid(),
     nom,
     trata: $("#f-med-trata").value.trim(),
-    precaucoes: $("#f-med-precaucoes").value.trim(),
     consigne: $("#f-med-consigne").value.trim(),
     foto: fotoValue || null,
     heures
@@ -1133,6 +1155,7 @@ $("#btn-emergencia").addEventListener("click", () => {
 });
 
 $("#emergencia-cancel").addEventListener("click", () => $("#modal-emergencia").classList.add("hidden"));
+$("#nav-cancel").addEventListener("click", () => $("#modal-nav").classList.add("hidden"));
 
 /* ---------- Zoom de texto ---------- */
 const ZOOM_KEY = "bussola-zoom";
@@ -1236,11 +1259,12 @@ function checkReminders() {
     if (!r.date || !r.heure) return;
     const rdvDateTime = new Date(r.date + "T" + r.heure);
     const diffMin = (rdvDateTime - now) / 60000;
+    const levarSuffix = r.precisaLevarExames && r.levarExamesTexto ? ` Não esqueças de levar: ${r.levarExamesTexto}.` : "";
 
     const tag1h = `rdv1h_${r.id}`;
     if (diffMin > 0 && diffMin <= 60 && !firedTags.has(tag1h)) {
       firedTags.add(tag1h);
-      fireNotification("📅 Consulta daqui a 1 hora", `${r.medecin} — ${r.motif || ""}`, tag1h);
+      fireNotification("📅 Consulta daqui a 1 hora", `${r.medecin} — ${r.motif || ""}.${levarSuffix}`, tag1h);
     }
 
     const vespera = new Date(rdvDateTime);
@@ -1249,7 +1273,7 @@ function checkReminders() {
     const tagVespera = `rdvvespera_${r.id}`;
     if (Math.abs(now - vespera) < 60000 && !firedTags.has(tagVespera)) {
       firedTags.add(tagVespera);
-      fireNotification("📅 Consulta amanhã", `${r.medecin} — ${r.motif || ""} às ${r.heure}`, tagVespera);
+      fireNotification("📅 Consulta amanhã", `${r.medecin} — ${r.motif || ""} às ${r.heure}.${levarSuffix}`, tagVespera);
     }
   });
 

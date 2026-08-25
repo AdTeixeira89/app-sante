@@ -2,6 +2,10 @@
 
 Aplicação web (PWA) para ajudar um familiar a organizar-se com as consultas médicas, os documentos e os medicamentos — sem se perder no meio dos papéis.
 
+## Design
+
+O ecrã principal tem um visual propositadamente acolhedor: um motivo dourado de raios/rosa-dos-ventos no fundo do cabeçalho (uma referência ao nome "Bússola"), o "bilhete" da próxima consulta com um gradiente castanho-terracota e uma marca de água ◎ discreta, uma textura de papel subtil em todo o ecrã, e ícones de navegação em emblemas coloridos (verde floresta / âmbar / argila). As cores funcionais (verde para confirmado, vermelho para esquecido) mantêm-se — só a decoração foi aquecida.
+
 ## Dois modos
 
 - **Modo principal** (para a pessoa a ser ajudada): 3 botões grandes, texto grande, nenhuma opção escondida. Um "bilhete" mostra sempre a próxima consulta num relance.
@@ -21,10 +25,14 @@ Aplicação web (PWA) para ajudar um familiar a organizar-se com as consultas m�
 - **Partager et imprimer chaque document** depuis l'écran Documentos (bouton de partage natif du téléphone, ou impression directe)
 - **Perfil do paciente** : nome, sexo, idade e peso, éditáveis na área do cuidador — o nome aparece como saudação personalizada no ecrã principal ("Olá, José 👋")
 - **Indicação de cada medicamento** : campo "Para que serve" (ex.: Diabetes, Tensão arterial), visível na lista de medicamentos
-- **Ficha de informação por medicamento** (ícone "ℹ️") : para que serve + precauções — preenchidas por ti a partir da bula ou do farmacêutico, a app nunca gera informação médica sozinha
-- **Itinerário clicável** : a morada de cada consulta abre diretamente o Google Maps
+- **Ficha de informação por medicamento** (ícone "ℹ️", disponível apenas no ecrã "Medicamentos a tomar") : para que serve — preenchido por ti, a app nunca gera informação médica sozinha
+- **Escolha de navegação GPS** : ao tocar numa morada, escolhe entre Google Maps, Plans (Apple Maps) ou Waze
+- **Checkbox "É preciso levar exames"** em cada consulta, com descrição livre — aparece na ficha da consulta e nos lembretes de notificação
+- **Consultas passadas** : separador "Passadas" no ecrã de consultas, para consultar o histórico
+- **Documentos por categoria** : separadores Todos / Receitas / Convocatórias / Resultados
+- **Itinerário clicável** : a morada de cada consulta abre a escolha de mapa
 - **Ecrã "Medicamentos a tomar hoje"** dedicado (novo botão no ecrã principal) — o ecrã principal em si só mostra os medicamentos esquecidos, em pequeno, para não sobrecarregar
-- **Botão vermelho de emergência** no ecrã principal, para ligar diretamente a um familiar (números configuráveis em Definições → Contactos de emergência)
+- **Botão vermelho de emergência** fixo no topo do ecrã principal, para ligar diretamente a um familiar (números configuráveis em Definições → Contactos de emergência)
 - **Zoom de texto** : botão "Aa" no ecrã principal, alterna entre 3 tamanhos (normal / grande / muito grande), memorizado neste aparelho
 - **Synchronisation multi-appareils (Firebase)** : les données sont partagées en temps réel entre les téléphones du Papa et des enfants, via un « code de famille » à 6 caractères (voir section dédiée ci-dessous)
 - **État de la famille** : chaque appareil affiche la dernière activité des autres (ex. « Telemóvel do Papa — há 5 min »)

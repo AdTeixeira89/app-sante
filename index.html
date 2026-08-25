@@ -16,6 +16,23 @@
 
 <!-- ===================== MODO PRINCIPAL (pai) ===================== -->
 <main id="view-pere" class="view">
+  <svg class="home-sunburst" viewBox="0 0 300 300" aria-hidden="true">
+    <circle cx="230" cy="70" r="130" fill="none" stroke="var(--amber)" stroke-width="1.5" opacity="0.35"/>
+    <g stroke="var(--amber)" stroke-width="1.5" opacity="0.35">
+      <line x1="230" y1="-20" x2="230" y2="30"/>
+      <line x1="230" y1="110" x2="230" y2="160"/>
+      <line x1="140" y1="70" x2="190" y2="70"/>
+      <line x1="270" y1="70" x2="320" y2="70"/>
+      <line x1="167" y1="7" x2="197" y2="37"/>
+      <line x1="263" y1="103" x2="293" y2="133"/>
+      <line x1="293" y1="7" x2="263" y2="37"/>
+      <line x1="197" y1="103" x2="167" y2="133"/>
+    </g>
+    <circle cx="230" cy="70" r="8" fill="var(--amber)" opacity="0.35"/>
+  </svg>
+
+  <button id="btn-emergencia" class="emergency-btn-top">🆘 Emergência — ligar a um familiar</button>
+
   <header class="pere-header">
     <div class="brand">
       <span class="brand-mark" aria-hidden="true">◎</span>
@@ -50,13 +67,7 @@
       <span class="big-btn-icon" aria-hidden="true">📄</span>
       <span>Os meus documentos</span>
     </button>
-    <button class="big-btn" data-open="meds">
-      <span class="big-btn-icon" aria-hidden="true">ℹ️</span>
-      <span>Info dos medicamentos</span>
-    </button>
   </nav>
-
-  <button id="btn-emergencia" class="emergency-btn">🆘 Emergência — ligar a um familiar</button>
 </main>
 
 <!-- ===================== MEDICAMENTOS A TOMAR HOJE (pai) ===================== -->
@@ -74,6 +85,10 @@
     <button class="back-btn" data-back="pere" aria-label="Voltar">←</button>
     <h1>As minhas consultas</h1>
   </header>
+  <div class="aidant-tabs" style="padding:0 20px 12px;">
+    <button class="tab-btn active" data-rdvtab="proximas">Próximas</button>
+    <button class="tab-btn" data-rdvtab="passadas">Passadas</button>
+  </div>
   <div id="rdv-list-content" class="content-scroll"></div>
 </section>
 
@@ -83,19 +98,16 @@
     <button class="back-btn" data-back="pere" aria-label="Voltar">←</button>
     <h1>Os meus documentos</h1>
   </header>
+  <div class="aidant-tabs" style="padding:0 20px 12px;">
+    <button class="tab-btn active" data-doctab="todos">Todos</button>
+    <button class="tab-btn" data-doctab="Receita">Receitas</button>
+    <button class="tab-btn" data-doctab="Convocatória">Convocatórias</button>
+    <button class="tab-btn" data-doctab="Resultado">Resultados</button>
+  </div>
   <div class="content-scroll">
     <button class="add-btn" id="btn-add-doc">+ Adicionar documento</button>
     <div id="docs-list-content"></div>
   </div>
-</section>
-
-<!-- ===================== MEDICAMENTOS - INFO (pai) ===================== -->
-<section id="view-meds" class="view sub-view hidden">
-  <header class="sub-header">
-    <button class="back-btn" data-back="pere" aria-label="Voltar">←</button>
-    <h1>Info dos medicamentos</h1>
-  </header>
-  <div id="meds-list-content" class="content-scroll"></div>
 </section>
 
 <!-- ===================== FICHA DE UM MEDICAMENTO ===================== -->
@@ -116,6 +128,17 @@
     <div id="emergencia-contacts"></div>
     <div class="modal-actions">
       <button id="emergencia-cancel" class="ghost-btn">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== ESCOLHA DE MAPA (GPS) ===================== -->
+<div id="modal-nav" class="modal hidden">
+  <div class="modal-card">
+    <h2>Como chegar?</h2>
+    <div id="nav-links"></div>
+    <div class="modal-actions">
+      <button id="nav-cancel" class="ghost-btn">Cancelar</button>
     </div>
   </div>
 </div>
@@ -280,6 +303,17 @@
       <textarea id="f-rdv-perguntas" rows="3" placeholder="Ex.: Perguntar sobre os efeitos secundários do novo medicamento"></textarea>
     </label>
 
+    <label class="checkbox-label">
+      <input type="checkbox" id="f-rdv-levar-exames" />
+      É preciso levar exames para esta consulta
+    </label>
+    <div id="f-rdv-levar-exames-detail" class="hidden">
+      <label>O quê? (ex.: resultados de sangue)
+        <input id="f-rdv-levar-exames-texto" type="text" placeholder="Ex.: Resultados de sangue" />
+      </label>
+      <p class="muted" style="margin:2px 0 0;">Podes anexar já o documento em baixo, em "Exames anexados".</p>
+    </div>
+
     <div class="modal-actions">
       <button id="f-rdv-delete" class="danger-btn hidden">Eliminar</button>
       <button id="f-rdv-cancel" class="ghost-btn">Cancelar</button>
@@ -296,10 +330,7 @@
       <input id="f-med-nom" type="text" placeholder="Ex.: Ben-u-ron 1000mg" />
     </label>
     <label>Para que serve (opcional)
-      <input id="f-med-trata" type="text" placeholder="Ex.: Diabetes, Tensão arterial" />
-    </label>
-    <label>Precauções (opcional)
-      <textarea id="f-med-precaucoes" rows="2" placeholder="Ex.: Não tomar com álcool. Confirmar sempre com o médico ou farmacêutico."></textarea>
+      <input id="f-med-trata" type="text" placeholder="Ex.: Diabetes, Ansiedade, Tensão arterial" />
     </label>
     <label>Indicação (opcional)
       <input id="f-med-consigne" type="text" placeholder="Ex.: tomar com um copo de água" />
@@ -329,7 +360,8 @@
     <label>Tipo
       <select id="f-doc-tipo">
         <option value="Receita">Receita</option>
-        <option value="Exame">Exame / Resultado</option>
+        <option value="Convocatória">Convocatória de consulta</option>
+        <option value="Resultado">Resultado / Exame</option>
         <option value="Outro">Outro</option>
       </select>
     </label>

@@ -1,14 +1,16 @@
 :root {
   --zoom: 1;
   --ink: #1B2A4A;
-  --paper: #FAF8F5;
+  --paper: #FBF2E4;
   --card: #FFFFFF;
   --forest: #2F6F5E;
   --forest-dark: #234F43;
   --amber: #E0A458;
   --amber-dark: #B9803A;
+  --clay: #B8623E;
+  --clay-dark: #8F4A2E;
   --danger: #C1443C;
-  --line: #E4DFD5;
+  --line: #E9DFCE;
   --muted: #6B6458;
   --radius: 18px;
   --font-display: "Fraunces", serif;
@@ -31,6 +33,28 @@ body {
   margin: 0 auto;
   min-height: 100vh;
   position: relative;
+  background-image: radial-gradient(circle, rgba(184,98,62,0.06) 1px, transparent 1px);
+  background-size: 14px 14px;
+}
+
+#view-pere {
+  position: relative;
+  overflow: hidden;
+}
+
+.home-sunburst {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 220px;
+  height: 220px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+#view-pere > *:not(.home-sunburst) {
+  position: relative;
+  z-index: 1;
 }
 
 .hidden { display: none !important; }
@@ -87,7 +111,8 @@ button {
 .home-greeting {
   padding: 4px 20px 0;
   font-family: var(--font-display);
-  font-size: calc(19px * var(--zoom));
+  font-size: calc(23px * var(--zoom));
+  font-weight: 600;
   color: var(--ink);
 }
 
@@ -124,18 +149,43 @@ button {
 }
 
 /* ---------- Botão de emergência ---------- */
-.emergency-btn {
+.emergency-btn-top {
   display: block;
-  width: calc(100% - 40px);
-  margin: 0 20px 30px;
+  width: 100%;
   background: var(--danger);
   color: white;
   border: none;
-  border-radius: 16px;
-  padding: 18px;
-  font-size: calc(17px * var(--zoom));
+  border-radius: 0;
+  padding: 14px 20px;
+  font-size: calc(15px * var(--zoom));
   font-weight: 700;
   text-align: center;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: calc(15px * var(--zoom));
+  font-weight: 700;
+  color: var(--ink);
+  margin: 16px 0 4px;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.rdv-card-levar {
+  font-size: calc(14px * var(--zoom));
+  color: var(--ink);
+  background: #FBF3E7;
+  border-left: 4px solid var(--amber);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-top: 10px;
 }
 
 .big-btn-primary {
@@ -211,12 +261,25 @@ button {
 /* ---------- Ticket "prochain rendez-vous" (signature element) ---------- */
 .ticket {
   margin: 12px 20px 0;
-  background: var(--ink);
+  background: linear-gradient(135deg, #3A2A20 0%, #6B3F2A 55%, #8A4E30 100%);
   color: var(--paper);
   border-radius: var(--radius);
   padding: 22px 20px;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 8px 24px rgba(90,50,30,0.22);
+}
+
+.ticket::before {
+  content: "◎";
+  position: absolute;
+  right: -18px;
+  bottom: -34px;
+  font-size: 150px;
+  color: var(--paper);
+  opacity: 0.07;
+  line-height: 1;
+  font-family: var(--font-display);
 }
 
 .ticket::after {
@@ -350,8 +413,20 @@ button {
 }
 
 .big-btn-icon {
-  font-size: calc(30px * var(--zoom));
+  font-size: calc(24px * var(--zoom));
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--forest);
 }
+
+.big-nav .big-btn:nth-child(1) .big-btn-icon { background: var(--forest); }
+.big-nav .big-btn:nth-child(2) .big-btn-icon { background: var(--amber-dark); }
+.big-nav .big-btn:nth-child(3) .big-btn-icon { background: var(--clay); }
 
 /* ---------- Sous-écrans ---------- */
 .sub-header {
