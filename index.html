@@ -21,7 +21,10 @@
       <span class="brand-mark" aria-hidden="true">◎</span>
       <span class="brand-name">Bússola Saúde</span>
     </div>
-    <button id="btn-open-aidant" class="icon-btn" aria-label="Área do cuidador">⚙</button>
+    <div class="header-actions">
+      <button id="btn-zoom-text" class="icon-btn" aria-label="Aumentar tamanho do texto">Aa</button>
+      <button id="btn-open-aidant" class="icon-btn" aria-label="Área do cuidador">⚙</button>
+    </div>
   </header>
 
   <div class="home-greeting" id="home-greeting"></div>
@@ -30,11 +33,15 @@
     <!-- preenchido por JS -->
   </section>
 
-  <section class="today-list" id="today-meds" aria-live="polite">
-    <!-- preenchido por JS -->
+  <section class="home-missed" id="home-missed-meds" aria-live="polite">
+    <!-- preenchido por JS: apenas medicamentos esquecidos -->
   </section>
 
   <nav class="big-nav">
+    <button class="big-btn big-btn-primary" data-open="medshoje">
+      <span class="big-btn-icon" aria-hidden="true">💊</span>
+      <span>Medicamentos a tomar</span>
+    </button>
     <button class="big-btn" data-open="rdv">
       <span class="big-btn-icon" aria-hidden="true">📅</span>
       <span>As minhas consultas</span>
@@ -44,11 +51,22 @@
       <span>Os meus documentos</span>
     </button>
     <button class="big-btn" data-open="meds">
-      <span class="big-btn-icon" aria-hidden="true">💊</span>
-      <span>Os meus medicamentos</span>
+      <span class="big-btn-icon" aria-hidden="true">ℹ️</span>
+      <span>Info dos medicamentos</span>
     </button>
   </nav>
+
+  <button id="btn-emergencia" class="emergency-btn">🆘 Emergência — ligar a um familiar</button>
 </main>
+
+<!-- ===================== MEDICAMENTOS A TOMAR HOJE (pai) ===================== -->
+<section id="view-meds-hoje" class="view sub-view hidden">
+  <header class="sub-header">
+    <button class="back-btn" data-back="pere" aria-label="Voltar">←</button>
+    <h1>Medicamentos a tomar hoje</h1>
+  </header>
+  <div id="meds-hoje-content" class="content-scroll"></div>
+</section>
 
 <!-- ===================== LISTA DE CONSULTAS (pai) ===================== -->
 <section id="view-rdv-list" class="view sub-view hidden">
@@ -71,14 +89,36 @@
   </div>
 </section>
 
-<!-- ===================== MEDICAMENTOS (pai) ===================== -->
+<!-- ===================== MEDICAMENTOS - INFO (pai) ===================== -->
 <section id="view-meds" class="view sub-view hidden">
   <header class="sub-header">
     <button class="back-btn" data-back="pere" aria-label="Voltar">←</button>
-    <h1>Os meus medicamentos</h1>
+    <h1>Info dos medicamentos</h1>
   </header>
   <div id="meds-list-content" class="content-scroll"></div>
 </section>
+
+<!-- ===================== FICHA DE UM MEDICAMENTO ===================== -->
+<div id="modal-info" class="modal hidden">
+  <div class="modal-card">
+    <h2 id="info-modal-title">Medicamento</h2>
+    <div id="info-modal-body"></div>
+    <div class="modal-actions">
+      <button id="info-modal-close" class="primary-btn">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== EMERGÊNCIA ===================== -->
+<div id="modal-emergencia" class="modal hidden">
+  <div class="modal-card">
+    <h2>A quem ligar?</h2>
+    <div id="emergencia-contacts"></div>
+    <div class="modal-actions">
+      <button id="emergencia-cancel" class="ghost-btn">Cancelar</button>
+    </div>
+  </div>
+</div>
 
 <!-- ===================== PIN CUIDADOR ===================== -->
 <section id="view-pin" class="view sub-view hidden">
@@ -150,6 +190,23 @@
       <button id="save-perfil" class="secondary-btn">Guardar perfil</button>
     </div>
     <div class="settings-card">
+      <h3>Contactos de emergência</h3>
+      <p class="muted">Números que aparecem no botão vermelho "Emergência" do ecrã principal.</p>
+      <label>Nome do contacto 1
+        <input id="f-contato1-nome" type="text" placeholder="Ex.: Adão" />
+      </label>
+      <label>Telefone do contacto 1
+        <input id="f-contato1-tel" type="tel" placeholder="Ex.: +351912345678" />
+      </label>
+      <label>Nome do contacto 2 (opcional)
+        <input id="f-contato2-nome" type="text" placeholder="Ex.: Irmão" />
+      </label>
+      <label>Telefone do contacto 2 (opcional)
+        <input id="f-contato2-tel" type="tel" placeholder="Ex.: +351912345679" />
+      </label>
+      <button id="save-contatos" class="secondary-btn">Guardar contactos</button>
+    </div>
+    <div class="settings-card">
       <h3>Família (sincronização)</h3>
       <p class="muted">Este código liga este aparelho aos outros da família. Usa o mesmo código nos telemóveis do Papa e dos filhos para partilhar os mesmos dados em tempo real.</p>
       <div class="family-code-box">
@@ -160,6 +217,7 @@
         <input id="join-family-code" type="text" maxlength="8" placeholder="Ex.: A1B2C3" style="text-transform:uppercase;" />
       </label>
       <button id="btn-join-family" class="secondary-btn">Ligar a este código</button>
+      <p id="family-join-status" class="muted"></p>
       <label>Nome deste aparelho (opcional)
         <input id="device-label" type="text" placeholder="Ex.: Telemóvel do Papa" />
       </label>
@@ -239,6 +297,9 @@
     </label>
     <label>Para que serve (opcional)
       <input id="f-med-trata" type="text" placeholder="Ex.: Diabetes, Tensão arterial" />
+    </label>
+    <label>Precauções (opcional)
+      <textarea id="f-med-precaucoes" rows="2" placeholder="Ex.: Não tomar com álcool. Confirmar sempre com o médico ou farmacêutico."></textarea>
     </label>
     <label>Indicação (opcional)
       <input id="f-med-consigne" type="text" placeholder="Ex.: tomar com um copo de água" />

@@ -56,7 +56,7 @@ function familyCollection(name) {
 }
 
 /* ===================== ESTADO EM MEMÓRIA ===================== */
-let state = { rdvs: [], meds: [], docs: [], medLog: {}, pin: "1234", perfil: {} };
+let state = { rdvs: [], meds: [], docs: [], medLog: {}, pin: "1234", perfil: {}, contatos: {} };
 let familyPresence = [];
 let unsubscribers = [];
 
@@ -73,6 +73,7 @@ function handleFirestoreError(err) {
 function onDataChanged() {
   state.rdvs.forEach((r) => { if (!r.exames) r.exames = []; if (r.perguntas === undefined) r.perguntas = ""; });
   renderHome();
+  renderTodayMeds();
   renderRdvList();
   renderDocsList();
   renderMedsList();
@@ -114,6 +115,10 @@ function startListening() {
   unsubscribers.push(onSnapshot(familyRef("meta", "profile"), (snap) => {
     state.perfil = snap.exists() ? snap.data() : {};
     onDataChanged();
+  }, handleFirestoreError));
+
+  unsubscribers.push(onSnapshot(familyRef("meta", "contacts"), (snap) => {
+    state.contatos = snap.exists() ? snap.data() : {};
   }, handleFirestoreError));
 
   unsubscribers.push(onSnapshot(familyCollection("presence"), (snap) => {
@@ -206,6 +211,7 @@ function showView(id) {
 $$("[data-open]").forEach((btn) => {
   btn.addEventListener("click", () => {
     const target = btn.dataset.open;
+    if (target === "medshoje") { renderTodayMeds(); showView("view-meds-hoje"); }
     if (target === "rdv") { renderRdvList(); showView("view-rdv-list"); }
     if (target === "docs") { renderDocsList(); showView("view-docs"); }
     if (target === "meds") { renderMedsList(); showView("view-meds"); }
@@ -253,7 +259,7 @@ $$(".tab-btn").forEach((btn) => {
 function renderHome() {
   renderGreeting();
   renderNextTicket();
-  renderTodayMeds();
+  renderHomeMissedMeds();
 }
 
 function renderGreeting() {
@@ -263,6 +269,10 @@ function renderGreeting() {
   el.innerHTML = nome
     ? `Olá, ${escapeHTML(nome)} 👋<span class="greeting-date">${dateLabel}</span>`
     : `<span class="greeting-date">${dateLabel}</span>`;
+}
+
+function mapsLink(address) {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
 }
 
 function getUpcomingRdvs() {
@@ -288,7 +298,26 @@ function renderNextTicket() {
       <div><span>Data</span>${capitalize(formatDatePT(r.date))}</div>
       <div><span>Hora</span>${r.heure || "—"}</div>
     </div>
+    ${r.lieu ? `<a class="rdv-card-address" style="color:var(--amber);margin-top:14px;" href="${mapsLink(r.lieu)}" target="_blank" rel="noopener">🗺️ Ver itinerário — ${escapeHTML(r.lieu)}</a>` : ""}
   `;
+}
+
+function renderHomeMissedMeds() {
+  const el = $("#home-missed-meds");
+  const today = todayStr();
+  const now = new Date();
+  const missed = [];
+  state.meds.forEach((m) => {
+    (m.heures || []).forEach((h) => {
+      const key = `${today}_${m.id}_${h}`;
+      if (state.medLog[key]) return;
+      if (isSlotLate(h, now)) missed.push({ nome: m.nom, heure: h });
+    });
+  });
+  if (missed.length === 0) { el.innerHTML = ""; return; }
+  el.innerHTML = missed.map((m) =>
+    `<div class="missed-chip">🔴 ${escapeHTML(m.nome)} das ${m.heure} — ainda não confirmado</div>`
+  ).join("");
 }
 
 function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
@@ -372,7 +401,7 @@ function isSlotLate(heureSched, now) {
 }
 
 function renderTodayMeds() {
-  const el = $("#today-meds");
+  const el = $("#meds-hoje-content");
   const today = todayStr();
   const now = new Date();
   const slots = [];
@@ -414,11 +443,16 @@ function renderTodayMeds() {
             <div class="med-card-time">${s.heure}</div>
             <div class="med-card-name">${escapeHTML(s.nom)}</div>
           </div>
+          <button class="med-info-btn" data-info-med="${s.medId}" aria-label="Mais informação">ℹ️</button>
         </div>
         ${actionsHTML}
       </div>
     `;
   }).join("");
+
+  el.querySelectorAll("[data-info-med]").forEach((btn) => {
+    btn.addEventListener("click", () => showMedInfo(btn.dataset.infoMed));
+  });
 
   el.querySelectorAll("[data-med-action]").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -432,6 +466,7 @@ function renderTodayMeds() {
       else entry = { status: "agora", horaReal: nowTs.toTimeString().slice(0, 5), timestamp: nowTs.toISOString() };
       state.medLog[key] = entry;
       renderTodayMeds();
+      renderHomeMissedMeds();
       fsSetItem("medLog", key, entry);
     });
   });
@@ -441,6 +476,7 @@ function renderTodayMeds() {
       const key = btn.dataset.editlog;
       delete state.medLog[key];
       renderTodayMeds();
+      renderHomeMissedMeds();
       fsDeleteItem("medLog", key);
     });
   });
@@ -464,7 +500,7 @@ function rdvCardHTML(r) {
       <div class="rdv-card-date">${capitalize(formatDatePT(r.date))}${r.heure ? " · " + r.heure : ""}</div>
       <div class="rdv-card-medecin">${escapeHTML(r.medecin || "Consulta")}</div>
       ${r.motif ? `<div class="rdv-card-motif">${escapeHTML(r.motif)}</div>` : ""}
-      ${r.lieu ? `<div class="rdv-card-lieu">📍 ${escapeHTML(r.lieu)}</div>` : ""}
+      ${r.lieu ? `<a class="rdv-card-address" href="${mapsLink(r.lieu)}" target="_blank" rel="noopener">🗺️ ${escapeHTML(r.lieu)}</a>` : ""}
       ${r.perguntas ? `<div class="rdv-card-perguntas">📝 <strong>Perguntas ao médico:</strong> ${escapeHTML(r.perguntas)}</div>` : ""}
       ${r.photo ? fileThumbHTML(r.photo, "Documento da consulta") : ""}
       ${exames.length ? `<div class="rdv-card-lieu">${exames.length} exame(s) anexado(s)</div>
@@ -654,14 +690,41 @@ function renderMedsList() {
   }
   el.innerHTML = state.meds.map((m) => `
     <div class="rdv-card">
-      ${m.foto ? `<img class="doc-thumb" src="${m.foto}" alt="Caixa de ${escapeHTML(m.nom)}" />` : ""}
-      <div class="rdv-card-medecin">${escapeHTML(m.nom)}</div>
+      <div style="display:flex; align-items:center; gap:12px; justify-content:space-between;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          ${m.foto ? `<img class="med-thumb" src="${m.foto}" alt="Caixa de ${escapeHTML(m.nom)}" />` : ""}
+          <div class="rdv-card-medecin">${escapeHTML(m.nom)}</div>
+        </div>
+        <button class="med-info-btn" data-info-med="${m.id}" aria-label="Mais informação">ℹ️</button>
+      </div>
       ${m.trata ? `<div class="rdv-card-lieu">Para: ${escapeHTML(m.trata)}</div>` : ""}
       ${m.consigne ? `<div class="rdv-card-motif">${escapeHTML(m.consigne)}</div>` : ""}
       <div class="rdv-card-lieu">Horários: ${(m.heures || []).join(", ") || "—"}</div>
     </div>
   `).join("");
+
+  el.querySelectorAll("[data-info-med]").forEach((btn) => {
+    btn.addEventListener("click", () => showMedInfo(btn.dataset.infoMed));
+  });
 }
+
+function showMedInfo(medId) {
+  const m = state.meds.find((x) => x.id === medId);
+  if (!m) return;
+  $("#info-modal-title").textContent = m.nom;
+  let html = "";
+  html += `<div class="info-block"><strong>Para que serve</strong>${m.trata ? escapeHTML(m.trata) : "Não indicado — pergunta ao médico ou farmacêutico."}</div>`;
+  if (m.consigne) html += `<div class="info-block"><strong>Como tomar</strong>${escapeHTML(m.consigne)}</div>`;
+  if (m.precaucoes) {
+    html += `<div class="info-block"><strong>Precauções</strong><div class="info-precaucoes">${escapeHTML(m.precaucoes)}</div></div>`;
+  } else {
+    html += `<div class="info-block"><strong>Precauções</strong>Sem informação registada. Confirma sempre com o médico ou farmacêutico antes de misturar com álcool ou outros medicamentos.</div>`;
+  }
+  $("#info-modal-body").innerHTML = html;
+  $("#modal-info").classList.remove("hidden");
+}
+
+$("#info-modal-close").addEventListener("click", () => $("#modal-info").classList.add("hidden"));
 
 /* ===================== ÁREA DO CUIDADOR ===================== */
 function computeMissedEntries(daysBack) {
@@ -723,6 +786,7 @@ function renderAidant() {
   renderAidantMeds();
   renderHistorico();
   fillPerfilForm();
+  fillContatosForm();
   $("#notif-status").textContent = notifStatusLabel();
 }
 
@@ -904,6 +968,7 @@ function openMedModal(id) {
   $("#med-modal-title").textContent = id ? "Editar medicamento" : "Novo medicamento";
   $("#f-med-nom").value = m ? m.nom : "";
   $("#f-med-trata").value = m ? (m.trata || "") : "";
+  $("#f-med-precaucoes").value = m ? (m.precaucoes || "") : "";
   $("#f-med-consigne").value = m ? m.consigne : "";
   $("#f-med-photo").value = "";
   const medPreview = $("#f-med-photo-preview");
@@ -959,6 +1024,7 @@ $("#f-med-save").addEventListener("click", () => {
     id: editingMedId || uid(),
     nom,
     trata: $("#f-med-trata").value.trim(),
+    precaucoes: $("#f-med-precaucoes").value.trim(),
     consigne: $("#f-med-consigne").value.trim(),
     foto: fotoValue || null,
     heures
@@ -1029,6 +1095,67 @@ $("#save-perfil").addEventListener("click", () => {
   showToast("Perfil guardado.");
 });
 
+/* ---------- Contactos de emergência ---------- */
+function fillContatosForm() {
+  const c = state.contatos || {};
+  $("#f-contato1-nome").value = (c.contato1 && c.contato1.nome) || "";
+  $("#f-contato1-tel").value = (c.contato1 && c.contato1.tel) || "";
+  $("#f-contato2-nome").value = (c.contato2 && c.contato2.nome) || "";
+  $("#f-contato2-tel").value = (c.contato2 && c.contato2.tel) || "";
+}
+
+$("#save-contatos").addEventListener("click", () => {
+  const record = {
+    contato1: { nome: $("#f-contato1-nome").value.trim(), tel: $("#f-contato1-tel").value.trim() },
+    contato2: { nome: $("#f-contato2-nome").value.trim(), tel: $("#f-contato2-tel").value.trim() }
+  };
+  state.contatos = record;
+  fsSetItem("meta", "contacts", record, true);
+  showToast("Contactos guardados.");
+});
+
+function renderEmergencyModal() {
+  const el = $("#emergencia-contacts");
+  const c = state.contatos || {};
+  const list = [c.contato1, c.contato2].filter((x) => x && x.tel);
+  if (list.length === 0) {
+    el.innerHTML = `<p class="muted">Nenhum contacto configurado ainda. Pede a um familiar para o adicionar em Definições → Contactos de emergência.</p>`;
+    return;
+  }
+  el.innerHTML = list.map((c) =>
+    `<a class="emergencia-contact-btn" href="tel:${c.tel.replace(/\s/g, "")}">📞 Ligar a ${escapeHTML(c.nome || "familiar")}</a>`
+  ).join("");
+}
+
+$("#btn-emergencia").addEventListener("click", () => {
+  renderEmergencyModal();
+  $("#modal-emergencia").classList.remove("hidden");
+});
+
+$("#emergencia-cancel").addEventListener("click", () => $("#modal-emergencia").classList.add("hidden"));
+
+/* ---------- Zoom de texto ---------- */
+const ZOOM_KEY = "bussola-zoom";
+const ZOOM_LEVELS = [1, 1.2, 1.4];
+
+function applyZoom() {
+  let level = Number(localStorage.getItem(ZOOM_KEY)) || 1;
+  if (!ZOOM_LEVELS.includes(level)) level = 1;
+  document.documentElement.style.setProperty("--zoom", level);
+  return level;
+}
+applyZoom();
+
+$("#btn-zoom-text").addEventListener("click", () => {
+  const current = applyZoom();
+  const idx = ZOOM_LEVELS.indexOf(current);
+  const next = ZOOM_LEVELS[(idx + 1) % ZOOM_LEVELS.length];
+  localStorage.setItem(ZOOM_KEY, next);
+  applyZoom();
+  const labels = { 1: "normal", 1.2: "grande", 1.4: "muito grande" };
+  showToast(`Tamanho do texto: ${labels[next]}`);
+});
+
 /* ---------- Família (código de sincronização) ---------- */
 $("#family-code-value").textContent = familyCode;
 
@@ -1043,12 +1170,15 @@ $("#btn-copy-code").addEventListener("click", async () => {
 
 $("#btn-join-family").addEventListener("click", () => {
   const val = $("#join-family-code").value.trim().toUpperCase();
-  if (!/^[A-Z0-9]{4,8}$/.test(val)) { showToast("Código inválido."); return; }
+  if (!/^[A-Z0-9]{4,8}$/.test(val)) {
+    $("#family-join-status").textContent = "Código inválido — usa as 6 letras/números tal como aparecem no outro aparelho.";
+    return;
+  }
   localStorage.setItem(FAMILY_KEY, val);
   familyCode = val;
   $("#family-code-value").textContent = familyCode;
   $("#join-family-code").value = "";
-  showToast("A ligar ao novo código...");
+  $("#family-join-status").textContent = `✓ Ligado ao código ${val}. A sincronizar dados...`;
   startListening();
   sendPresence();
 });
@@ -1139,7 +1269,7 @@ function checkReminders() {
   }
 }
 
-setInterval(() => { checkReminders(); renderTodayMeds(); }, 30000);
+setInterval(() => { checkReminders(); renderTodayMeds(); renderHomeMissedMeds(); }, 30000);
 setInterval(sendPresence, 60000);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) sendPresence(); });
 

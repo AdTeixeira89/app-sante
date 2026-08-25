@@ -1,4 +1,4 @@
-const CACHE_NAME = "bussola-saude-v1";
+const CACHE_NAME = "bussola-saude-v2";
 const FILES_TO_CACHE = [
   "./index.html",
   "./style.css",
@@ -25,8 +25,16 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
+  // Rede primeiro (para receber sempre a versão mais recente quando há ligação),
+  // com o cache como reserva apenas quando offline.
   event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request))
+    fetch(event.request)
+      .then((response) => {
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy)).catch(() => {});
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
 

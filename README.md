@@ -21,6 +21,11 @@ Aplicação web (PWA) para ajudar um familiar a organizar-se com as consultas m�
 - **Partager et imprimer chaque document** depuis l'écran Documentos (bouton de partage natif du téléphone, ou impression directe)
 - **Perfil do paciente** : nome, sexo, idade e peso, éditáveis na área do cuidador — o nome aparece como saudação personalizada no ecrã principal ("Olá, José 👋")
 - **Indicação de cada medicamento** : campo "Para que serve" (ex.: Diabetes, Tensão arterial), visível na lista de medicamentos
+- **Ficha de informação por medicamento** (ícone "ℹ️") : para que serve + precauções — preenchidas por ti a partir da bula ou do farmacêutico, a app nunca gera informação médica sozinha
+- **Itinerário clicável** : a morada de cada consulta abre diretamente o Google Maps
+- **Ecrã "Medicamentos a tomar hoje"** dedicado (novo botão no ecrã principal) — o ecrã principal em si só mostra os medicamentos esquecidos, em pequeno, para não sobrecarregar
+- **Botão vermelho de emergência** no ecrã principal, para ligar diretamente a um familiar (números configuráveis em Definições → Contactos de emergência)
+- **Zoom de texto** : botão "Aa" no ecrã principal, alterna entre 3 tamanhos (normal / grande / muito grande), memorizado neste aparelho
 - **Synchronisation multi-appareils (Firebase)** : les données sont partagées en temps réel entre les téléphones du Papa et des enfants, via un « code de famille » à 6 caractères (voir section dédiée ci-dessous)
 - **État de la famille** : chaque appareil affiche la dernière activité des autres (ex. « Telemóvel do Papa — há 5 min »)
 - **Alerte discrète pour les aidants** : si une prise n'est pas confirmée 30 minutes après l'heure prévue, les appareils déjà entrés dans l'espace aidant reçoivent une notification locale
