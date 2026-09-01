@@ -519,6 +519,36 @@ button {
 }
 
 /* ---------- PIN ---------- */
+/* ---------- Ecrã de configuração inicial ---------- */
+.setup-box {
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 60px 24px 40px;
+}
+
+.setup-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.setup-brand .brand-mark {
+  font-size: calc(30px * var(--zoom));
+  color: var(--forest);
+}
+
+.setup-brand .brand-name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: calc(24px * var(--zoom));
+}
+
+#setup-choice, #setup-patient, #setup-caregiver {
+  margin-top: 28px;
+}
+
 .pin-box {
   padding: 10px 24px 40px;
   text-align: center;

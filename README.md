@@ -6,6 +6,21 @@ Aplicação web (PWA) para ajudar um familiar a organizar-se com as consultas m�
 
 O ecrã principal tem um visual propositadamente acolhedor: um motivo dourado de raios/rosa-dos-ventos no fundo do cabeçalho (uma referência ao nome "Bússola"), o "bilhete" da próxima consulta com um gradiente castanho-terracota e uma marca de água ◎ discreta, uma textura de papel subtil em todo o ecrã, e ícones de navegação em emblemas coloridos (verde floresta / âmbar / argila). As cores funcionais (verde para confirmado, vermelho para esquecido) mantêm-se — só a decoração foi aquecida.
 
+## ⚠️ Nova arquitetura de segurança (importante!)
+
+A partir desta versão, a app deixou de depender apenas de um código secreto partilhado. Agora usa **contas reais** (email/palavra-passe) para os cuidadores, e cada acesso a um novo aparelho tem de ser **aprovado** por um cuidador já ligado. Isto é essencial antes de publicar a app publicamente — o sistema anterior permitia que qualquer pessoa com o código lesse ou alterasse os dados da família.
+
+**Passo obrigatório antes de testar**: substitui as regras do Firestore pelas do ficheiro `firestore.rules.txt` incluído neste pacote (Firebase Console → Firestore Database → Rules → colar → Publicar).
+
+**Como funciona agora:**
+1. Um cuidador cria conta (email + palavra-passe) → isto cria automaticamente uma nova família e gera um código de convite
+2. Esse código é partilhado com o paciente ou outro cuidador
+3. Quem recebe o código pede para entrar (o paciente fá-lo de forma anónima e simples; outro cuidador cria também a sua própria conta)
+4. Um cuidador já aprovado **aprova o pedido** em Definições → Pedidos de acesso
+5. A partir daí, esse aparelho tem acesso total e permanente aos dados da família
+
+Isto significa que perder o código de convite já não é grave — um cuidador com conta pode sempre gerar acesso a partir do seu login, em vez de precisar de ir escavar a consola do Firebase.
+
 ## Dois modos
 
 - **Modo principal** (para a pessoa a ser ajudada): 3 botões grandes, texto grande, nenhuma opção escondida. Um "bilhete" mostra sempre a próxima consulta num relance.
@@ -65,7 +80,7 @@ service cloud.firestore {
 }
 ```
 
-Il faut aussi activer l'authentification anonyme : Authentication → Sign-in method → active le fournisseur "Anónimo". Personne n'a besoin de créer de compte ni de mot de passe — c'est automatique et invisible pour l'utilisateur.
+Il faut aussi activer deux méthodes de connexion : Authentication → Sign-in method → active **"Anónimo"** (pour l'appareil du patient, sans compte ni mot de passe) **et "E-mail/Palavra-passe"** (pour les comptes des aidants, requis depuis la nouvelle architecture de sécurité — voir plus haut).
 
 ## ⚠️ Limitação atual das notificações
 

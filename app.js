@@ -1,10 +1,13 @@
 /* ===================== FIREBASE ===================== */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getAuth, signInAnonymously, onAuthStateChanged
+  getAuth, onAuthStateChanged, signInAnonymously,
+  createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  signOut, sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
-  getFirestore, doc, collection, setDoc, deleteDoc, onSnapshot, enableIndexedDbPersistence
+  getFirestore, doc, collection, setDoc, updateDoc, deleteDoc, getDoc,
+  onSnapshot, enableIndexedDbPersistence, arrayUnion
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -22,18 +25,15 @@ const db = getFirestore(fbApp);
 
 try { enableIndexedDbPersistence(db); } catch (e) { /* multi-separador ou não suportado: seguro ignorar */ }
 
-/* ===================== CÓDIGO DE FAMÍLIA (liga os aparelhos) ===================== */
-const FAMILY_KEY = "bussola-family-code";
+/* ===================== IDENTIDADE DO APARELHO E DA FAMÍLIA =====================
+   A segurança real vem agora da conta (UID autenticado) que pertence à lista
+   "members" do documento da família — já não basta conhecer um código.
+   O código de convite serve apenas para pedir para entrar; um cuidador já
+   ligado tem de aprovar. */
 const DEVICE_ID_KEY = "bussola-device-id";
 const DEVICE_LABEL_KEY = "bussola-device-label";
 const CAREGIVER_FLAG_KEY = "bussola-is-caregiver";
-
-function generateFamilyCode() {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // sem carateres ambíguos (sem 0/O, 1/I)
-  let code = "";
-  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
-  return code;
-}
+const LOCAL_FAMILY_ID_KEY = "bussola-family-id";
 
 function getOrCreateDeviceId() {
   let id = localStorage.getItem(DEVICE_ID_KEY);
@@ -43,16 +43,77 @@ function getOrCreateDeviceId() {
   }
   return id;
 }
-
-let familyCode = localStorage.getItem(FAMILY_KEY) || generateFamilyCode();
-localStorage.setItem(FAMILY_KEY, familyCode);
 const deviceId = getOrCreateDeviceId();
 
+let familyId = localStorage.getItem(LOCAL_FAMILY_ID_KEY) || null;
+let currentUser = null;
+let pendingJoinRequests = [];
+
 function familyRef(...segments) {
-  return doc(db, "families", familyCode, ...segments);
+  return doc(db, "families", familyId, ...segments);
 }
 function familyCollection(name) {
-  return collection(db, "families", familyCode, name);
+  return collection(db, "families", familyId, name);
+}
+
+function generateInviteCode() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // sem carateres ambíguos (sem 0/O, 1/I)
+  let code = "";
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
+/* ---------- Criar/entrar/juntar ---------- */
+async function signUpCaregiver(email, password) {
+  const cred = await createUserWithEmailAndPassword(auth, email, password);
+  const newFamilyRef = doc(collection(db, "families"));
+  const code = generateInviteCode();
+  await setDoc(newFamilyRef, {
+    members: [cred.user.uid],
+    ownerUid: cred.user.uid,
+    pin: "1234",
+    inviteCode: code,
+    createdAt: Date.now()
+  });
+  await setDoc(doc(db, "inviteCodes", code), { familyId: newFamilyRef.id, createdAt: Date.now() });
+  await setDoc(doc(db, "userFamilies", cred.user.uid), { familyId: newFamilyRef.id });
+  return newFamilyRef.id;
+}
+
+async function loginCaregiver(email, password) {
+  await signInWithEmailAndPassword(auth, email, password);
+}
+
+async function resolveInviteCode(code) {
+  const snap = await getDoc(doc(db, "inviteCodes", code.trim().toUpperCase()));
+  return snap.exists() ? snap.data().familyId : null;
+}
+
+async function requestJoinFamily(targetFamilyId, uid) {
+  await setDoc(doc(db, "families", targetFamilyId, "joinRequests", uid), {
+    requestedAt: Date.now(),
+    label: localStorage.getItem(DEVICE_LABEL_KEY) || "Novo aparelho"
+  });
+}
+
+async function approveJoinRequest(uid) {
+  await updateDoc(familyRef(), { members: arrayUnion(uid) });
+  await setDoc(doc(db, "userFamilies", uid), { familyId });
+  await deleteDoc(familyRef("joinRequests", uid));
+}
+
+async function rejectJoinRequest(uid) {
+  await deleteDoc(familyRef("joinRequests", uid));
+}
+
+function listenForOwnApproval(uid) {
+  return onSnapshot(doc(db, "userFamilies", uid), (snap) => {
+    if (snap.exists() && !familyId) {
+      familyId = snap.data().familyId;
+      localStorage.setItem(LOCAL_FAMILY_ID_KEY, familyId);
+      onFamilyResolved();
+    }
+  });
 }
 
 /* ===================== ESTADO EM MEMÓRIA ===================== */
@@ -124,6 +185,21 @@ function startListening() {
     familyPresence = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
     renderFamilyPresence();
   }, handleFirestoreError));
+
+  unsubscribers.push(onSnapshot(familyCollection("joinRequests"), (snap) => {
+    pendingJoinRequests = snap.docs.map((d) => ({ uid: d.id, ...d.data() }));
+    renderJoinRequests();
+  }, handleFirestoreError));
+
+  unsubscribers.push(onSnapshot(familyRef(), (snap) => {
+    if (snap.exists()) $("#family-code-value").textContent = snap.data().inviteCode || "------";
+  }, handleFirestoreError));
+}
+
+function onFamilyResolved() {
+  showView("view-pere");
+  startListening();
+  sendPresence();
 }
 
 /* ---------- Escrita no Firestore (com atualização local otimista já feita pelo chamador) ---------- */
@@ -802,6 +878,7 @@ function renderAidant() {
   renderHistorico();
   fillPerfilForm();
   fillContatosForm();
+  renderJoinRequests();
   $("#notif-status").textContent = notifStatusLabel();
 }
 
@@ -1179,38 +1256,59 @@ $("#btn-zoom-text").addEventListener("click", () => {
   showToast(`Tamanho do texto: ${labels[next]}`);
 });
 
-/* ---------- Família (código de sincronização) ---------- */
-$("#family-code-value").textContent = familyCode;
-
+/* ---------- Família (convite + aprovação) ---------- */
 $("#btn-copy-code").addEventListener("click", async () => {
+  const code = $("#family-code-value").textContent.trim();
   try {
-    await navigator.clipboard.writeText(familyCode);
+    await navigator.clipboard.writeText(code);
     showToast("Código copiado.");
   } catch (e) {
-    showToast("Não foi possível copiar automaticamente — copia manualmente: " + familyCode);
+    showToast("Não foi possível copiar automaticamente — copia manualmente: " + code);
   }
 });
 
-$("#btn-join-family").addEventListener("click", () => {
-  const val = $("#join-family-code").value.trim().toUpperCase();
-  if (!/^[A-Z0-9]{4,8}$/.test(val)) {
-    $("#family-join-status").textContent = "Código inválido — usa as 6 letras/números tal como aparecem no outro aparelho.";
+function renderJoinRequests() {
+  const el = $("#join-requests-list");
+  if (!el) return;
+  if (pendingJoinRequests.length === 0) {
+    el.innerHTML = `<p class="muted">Nenhum pedido de acesso pendente.</p>`;
     return;
   }
-  localStorage.setItem(FAMILY_KEY, val);
-  familyCode = val;
-  $("#family-code-value").textContent = familyCode;
-  $("#join-family-code").value = "";
-  $("#family-join-status").textContent = `✓ Ligado ao código ${val}. A sincronizar dados...`;
-  startListening();
-  sendPresence();
-});
+  el.innerHTML = pendingJoinRequests.map((r) => `
+    <div class="aidant-item">
+      <div class="aidant-item-main">
+        <strong>${escapeHTML(r.label || "Novo aparelho")}</strong>
+        <span>Pediu para entrar</span>
+      </div>
+      <button class="secondary-btn small" data-approve="${r.uid}">Aprovar</button>
+      <button class="edit-link" data-reject="${r.uid}">Recusar</button>
+    </div>
+  `).join("");
+  el.querySelectorAll("[data-approve]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      await approveJoinRequest(btn.dataset.approve);
+      showToast("Acesso aprovado.");
+    });
+  });
+  el.querySelectorAll("[data-reject]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      await rejectJoinRequest(btn.dataset.reject);
+      showToast("Pedido recusado.");
+    });
+  });
+}
 
 const deviceLabelInput = $("#device-label");
 deviceLabelInput.value = localStorage.getItem(DEVICE_LABEL_KEY) || "";
 deviceLabelInput.addEventListener("change", () => {
   localStorage.setItem(DEVICE_LABEL_KEY, deviceLabelInput.value.trim());
   sendPresence();
+});
+
+$("#btn-logout").addEventListener("click", async () => {
+  await signOut(auth);
+  localStorage.removeItem(LOCAL_FAMILY_ID_KEY);
+  location.reload();
 });
 
 /* ===================== NOTIFICAÇÕES ===================== */
@@ -1302,15 +1400,129 @@ if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("./sw.js").catch(() => {});
 }
 
-renderHome();
 checkReminders();
-sendPresence();
 
-signInAnonymously(auth).catch((e) => {
-  console.error(e);
-  showToast("Não foi possível ligar à conta partilhada — verifica a ligação à internet.");
+// Mostra o ecrã de configuração até sabermos a que família este aparelho pertence
+showView("view-setup");
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) return;
+  currentUser = user;
+
+  if (familyId) {
+    // já tínhamos uma família guardada neste aparelho — confirma que ainda somos membros
+    onFamilyResolved();
+    return;
+  }
+
+  try {
+    const idxSnap = await getDoc(doc(db, "userFamilies", user.uid));
+    if (idxSnap.exists()) {
+      familyId = idxSnap.data().familyId;
+      localStorage.setItem(LOCAL_FAMILY_ID_KEY, familyId);
+      onFamilyResolved();
+    }
+    // se não existir, o utilizador ainda tem de escolher "paciente" ou "cuidador" no ecrã de configuração
+  } catch (e) {
+    console.error(e);
+    showToast("Sem ligação à internet.");
+  }
 });
 
-onAuthStateChanged(auth, (user) => {
-  if (user) startListening();
+/* ---------- Ecrã de configuração inicial ---------- */
+$("#setup-btn-patient").addEventListener("click", () => {
+  $("#setup-choice").classList.add("hidden");
+  $("#setup-patient").classList.remove("hidden");
+  if (!auth.currentUser) signInAnonymously(auth).catch(() => showToast("Sem ligação à internet."));
+});
+
+$("#setup-btn-caregiver").addEventListener("click", () => {
+  $("#setup-choice").classList.add("hidden");
+  $("#setup-caregiver").classList.remove("hidden");
+});
+
+$("#setup-patient-submit").addEventListener("click", async () => {
+  const code = $("#setup-patient-code").value.trim();
+  if (!code) { $("#setup-patient-status").textContent = "Introduz o código."; return; }
+  try {
+    if (!auth.currentUser) await signInAnonymously(auth);
+    const targetFamilyId = await resolveInviteCode(code);
+    if (!targetFamilyId) { $("#setup-patient-status").textContent = "Código inválido."; return; }
+    await requestJoinFamily(targetFamilyId, auth.currentUser.uid);
+    listenForOwnApproval(auth.currentUser.uid);
+    $("#setup-patient-status").textContent = "✓ Pedido enviado. A aguardar aprovação de um cuidador...";
+  } catch (e) {
+    console.error(e);
+    $("#setup-patient-status").textContent = "Não foi possível enviar o pedido. Verifica a ligação.";
+  }
+});
+
+$$("[data-authtab]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    $$("[data-authtab]").forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+    ["login", "signup", "joincode"].forEach((t) => $("#authtab-" + t).classList.add("hidden"));
+    $("#authtab-" + btn.dataset.authtab).classList.remove("hidden");
+    $("#auth-status").textContent = "";
+  });
+});
+
+$("#btn-login").addEventListener("click", async () => {
+  const email = $("#login-email").value.trim();
+  const password = $("#login-password").value;
+  if (!email || !password) { $("#auth-status").textContent = "Preenche o email e a palavra-passe."; return; }
+  try {
+    await loginCaregiver(email, password);
+    $("#auth-status").textContent = "A entrar...";
+  } catch (e) {
+    $("#auth-status").textContent = "Não foi possível entrar. Verifica o email e a palavra-passe.";
+  }
+});
+
+$("#btn-forgot-password").addEventListener("click", async () => {
+  const email = $("#login-email").value.trim();
+  if (!email) { $("#auth-status").textContent = "Escreve o teu email para receberes o link."; return; }
+  try {
+    await sendPasswordResetEmail(auth, email);
+    $("#auth-status").textContent = "Email enviado — verifica a tua caixa de entrada.";
+  } catch (e) {
+    $("#auth-status").textContent = "Não foi possível enviar o email.";
+  }
+});
+
+$("#btn-signup").addEventListener("click", async () => {
+  const email = $("#signup-email").value.trim();
+  const password = $("#signup-password").value;
+  if (!email || password.length < 6) { $("#auth-status").textContent = "Email válido e palavra-passe com 6+ caracteres."; return; }
+  try {
+    const newFamilyId = await signUpCaregiver(email, password);
+    familyId = newFamilyId;
+    localStorage.setItem(LOCAL_FAMILY_ID_KEY, familyId);
+    localStorage.setItem(CAREGIVER_FLAG_KEY, "1");
+    onFamilyResolved();
+  } catch (e) {
+    console.error(e);
+    $("#auth-status").textContent = e.code === "auth/email-already-in-use" ? "Este email já tem conta — usa Entrar." : "Não foi possível criar a conta.";
+  }
+});
+
+$("#btn-caregiver-join").addEventListener("click", async () => {
+  const email = $("#login-email").value.trim() || $("#signup-email").value.trim();
+  const code = $("#caregiver-join-code").value.trim();
+  if (!code) { $("#auth-status").textContent = "Introduz o código de convite."; return; }
+  try {
+    if (!auth.currentUser) {
+      $("#auth-status").textContent = "Cria a tua conta ou entra primeiro (separador Entrar/Criar conta) antes de usares um código.";
+      return;
+    }
+    const targetFamilyId = await resolveInviteCode(code);
+    if (!targetFamilyId) { $("#auth-status").textContent = "Código inválido."; return; }
+    await requestJoinFamily(targetFamilyId, auth.currentUser.uid);
+    localStorage.setItem(CAREGIVER_FLAG_KEY, "1");
+    listenForOwnApproval(auth.currentUser.uid);
+    $("#auth-status").textContent = "✓ Pedido enviado. A aguardar aprovação de outro cuidador...";
+  } catch (e) {
+    console.error(e);
+    $("#auth-status").textContent = "Não foi possível enviar o pedido.";
+  }
 });

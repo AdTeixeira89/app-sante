@@ -14,8 +14,78 @@
 </head>
 <body>
 
+<!-- ===================== CONFIGURAÇÃO INICIAL (conta + convite) ===================== -->
+<section id="view-setup" class="view">
+  <div class="setup-box">
+    <div class="setup-brand">
+      <span class="brand-mark" aria-hidden="true">◎</span>
+      <span class="brand-name">Bússola Saúde</span>
+    </div>
+    <p class="muted" style="text-align:center;">Vamos ligar este aparelho à família.</p>
+
+    <div id="setup-choice">
+      <button id="setup-btn-patient" class="big-btn" style="margin-bottom:14px;">
+        <span class="big-btn-icon" aria-hidden="true">🧑</span>
+        <span>Este é o telemóvel da pessoa a ajudar</span>
+      </button>
+      <button id="setup-btn-caregiver" class="big-btn">
+        <span class="big-btn-icon" aria-hidden="true">👨‍👩‍👦</span>
+        <span>Sou cuidador (filho/a, cônjuge...)</span>
+      </button>
+    </div>
+
+    <div id="setup-patient" class="hidden">
+      <label>Código de convite (pede a um cuidador)
+        <input id="setup-patient-code" type="text" maxlength="8" placeholder="Ex.: A1B2C3" style="text-transform:uppercase;" />
+      </label>
+      <button id="setup-patient-submit" class="primary-btn" style="width:100%;">Ligar este aparelho</button>
+      <p id="setup-patient-status" class="muted"></p>
+    </div>
+
+    <div id="setup-caregiver" class="hidden">
+      <div class="aidant-tabs">
+        <button class="tab-btn active" data-authtab="login">Entrar</button>
+        <button class="tab-btn" data-authtab="signup">Criar conta</button>
+        <button class="tab-btn" data-authtab="joincode">Tenho um código</button>
+      </div>
+
+      <div id="authtab-login">
+        <label>Email
+          <input id="login-email" type="email" placeholder="email@exemplo.com" />
+        </label>
+        <label>Palavra-passe
+          <input id="login-password" type="password" placeholder="••••••••" />
+        </label>
+        <button id="btn-login" class="primary-btn" style="width:100%;">Entrar</button>
+        <button id="btn-forgot-password" class="ghost-btn small">Esqueci-me da palavra-passe</button>
+      </div>
+
+      <div id="authtab-signup" class="hidden">
+        <p class="muted">Cria a tua conta — isto cria também uma nova família.</p>
+        <label>Email
+          <input id="signup-email" type="email" placeholder="email@exemplo.com" />
+        </label>
+        <label>Palavra-passe (mínimo 6 caracteres)
+          <input id="signup-password" type="password" placeholder="••••••••" />
+        </label>
+        <button id="btn-signup" class="primary-btn" style="width:100%;">Criar conta e família</button>
+      </div>
+
+      <div id="authtab-joincode" class="hidden">
+        <p class="muted">Já tens conta? Entra primeiro no separador "Entrar", depois volta aqui com o código de outro cuidador da família.</p>
+        <label>Código de convite
+          <input id="caregiver-join-code" type="text" maxlength="8" placeholder="Ex.: A1B2C3" style="text-transform:uppercase;" />
+        </label>
+        <button id="btn-caregiver-join" class="primary-btn" style="width:100%;">Juntar-me à família</button>
+      </div>
+
+      <p id="auth-status" class="muted"></p>
+    </div>
+  </div>
+</section>
+
 <!-- ===================== MODO PRINCIPAL (pai) ===================== -->
-<main id="view-pere" class="view">
+<main id="view-pere" class="view hidden">
   <svg class="home-sunburst" viewBox="0 0 300 300" aria-hidden="true">
     <circle cx="230" cy="70" r="130" fill="none" stroke="var(--amber)" stroke-width="1.5" opacity="0.35"/>
     <g stroke="var(--amber)" stroke-width="1.5" opacity="0.35">
@@ -230,24 +300,25 @@
       <button id="save-contatos" class="secondary-btn">Guardar contactos</button>
     </div>
     <div class="settings-card">
-      <h3>Família (sincronização)</h3>
-      <p class="muted">Este código liga este aparelho aos outros da família. Usa o mesmo código nos telemóveis do Papa e dos filhos para partilhar os mesmos dados em tempo real.</p>
+      <h3>Família (convite)</h3>
+      <p class="muted">Este código convida outra pessoa (outro cuidador, ou o telemóvel do paciente) a pedir para entrar. Tu tens sempre de aprovar cada pedido — ninguém entra só por saber o código.</p>
       <div class="family-code-box">
         <span id="family-code-value">------</span>
         <button id="btn-copy-code" class="secondary-btn small">Copiar</button>
       </div>
-      <label>Ligar a outro código
-        <input id="join-family-code" type="text" maxlength="8" placeholder="Ex.: A1B2C3" style="text-transform:uppercase;" />
-      </label>
-      <button id="btn-join-family" class="secondary-btn">Ligar a este código</button>
-      <p id="family-join-status" class="muted"></p>
       <label>Nome deste aparelho (opcional)
         <input id="device-label" type="text" placeholder="Ex.: Telemóvel do Papa" />
       </label>
+      <button id="btn-logout" class="ghost-btn small">Sair da conta neste aparelho</button>
+    </div>
+    <div class="settings-card">
+      <h3>Pedidos de acesso</h3>
+      <p class="muted">Aprova quem pode ver e gerir os dados da família.</p>
+      <div id="join-requests-list"></div>
     </div>
     <div class="settings-card">
       <h3>Estado da família</h3>
-      <p class="muted">Última atividade de cada aparelho ligado a este código.</p>
+      <p class="muted">Última atividade de cada aparelho ligado.</p>
       <div id="family-presence-list"></div>
     </div>
     <div class="settings-card">
