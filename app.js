@@ -1457,6 +1457,12 @@ $("#setup-patient-submit").addEventListener("click", async () => {
   }
 });
 
+const AUTH_TAB_COPY = {
+  login: { title: "Entrar", subtitle: "Acede à tua conta de cuidador." },
+  signup: { title: "Criar conta", subtitle: "Isto cria também uma nova família." },
+  joincode: { title: "Juntar-me com código", subtitle: "Usa o código de outro cuidador da família." }
+};
+
 $$("[data-authtab]").forEach((btn) => {
   btn.addEventListener("click", () => {
     $$("[data-authtab]").forEach((b) => b.classList.remove("active"));
@@ -1464,6 +1470,27 @@ $$("[data-authtab]").forEach((btn) => {
     ["login", "signup", "joincode"].forEach((t) => $("#authtab-" + t).classList.add("hidden"));
     $("#authtab-" + btn.dataset.authtab).classList.remove("hidden");
     $("#auth-status").textContent = "";
+    const copy = AUTH_TAB_COPY[btn.dataset.authtab];
+    $("#auth-title").textContent = copy.title;
+    $("#auth-subtitle").textContent = copy.subtitle;
+  });
+});
+
+$$("[data-back-to-choice]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    $("#setup-patient").classList.add("hidden");
+    $("#setup-caregiver").classList.add("hidden");
+    $("#setup-choice").classList.remove("hidden");
+  });
+});
+
+$$("[data-toggle-pw]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const input = $("#" + btn.dataset.togglePw);
+    const showing = input.type === "text";
+    input.type = showing ? "password" : "text";
+    btn.textContent = showing ? "👁" : "🙈";
+    btn.setAttribute("aria-label", showing ? "Mostrar palavra-passe" : "Ocultar palavra-passe");
   });
 });
 

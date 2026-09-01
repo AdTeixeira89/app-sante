@@ -518,12 +518,19 @@ button {
   font-size: calc(16px * var(--zoom));
 }
 
-/* ---------- PIN ---------- */
 /* ---------- Ecrã de configuração inicial ---------- */
+#view-setup {
+  position: relative;
+  overflow: hidden;
+  min-height: 100vh;
+}
+
 .setup-box {
   max-width: 400px;
   margin: 0 auto;
-  padding: 60px 24px 40px;
+  padding: 56px 20px 40px;
+  position: relative;
+  z-index: 1;
 }
 
 .setup-brand {
@@ -531,22 +538,231 @@ button {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .setup-brand .brand-mark {
-  font-size: calc(30px * var(--zoom));
+  font-size: calc(32px * var(--zoom));
   color: var(--forest);
 }
 
 .setup-brand .brand-name {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: calc(24px * var(--zoom));
+  font-size: calc(25px * var(--zoom));
+  color: var(--ink);
 }
 
-#setup-choice, #setup-patient, #setup-caregiver {
-  margin-top: 28px;
+.setup-tagline {
+  text-align: center;
+  color: var(--muted);
+  font-size: calc(15px * var(--zoom));
+  margin: 0 0 30px;
+}
+
+.setup-card {
+  background: var(--card);
+  border-radius: 22px;
+  padding: 28px 24px 26px;
+  box-shadow: 0 12px 32px rgba(90, 62, 40, 0.1);
+  border: 1px solid var(--line);
+}
+
+.setup-card + .setup-card {
+  margin-top: 16px;
+}
+
+.setup-card-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: calc(21px * var(--zoom));
+  color: var(--ink);
+  margin: 0 0 4px;
+}
+
+.setup-card-subtitle {
+  color: var(--muted);
+  font-size: calc(14px * var(--zoom));
+  margin: 0 0 22px;
+  line-height: 1.4;
+}
+
+.setup-hint {
+  color: var(--muted);
+  font-size: calc(13px * var(--zoom));
+  line-height: 1.4;
+  margin: 0 0 16px;
+  background: var(--paper);
+  padding: 10px 12px;
+  border-radius: 10px;
+}
+
+/* Botões de escolha (ecrã "quem és tu") */
+.choice-btn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px 16px;
+  text-align: left;
+  margin-bottom: 12px;
+}
+
+.choice-btn:last-child { margin-bottom: 0; }
+
+.choice-btn:active { background: #F1EEE7; }
+
+.choice-btn-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(20px * var(--zoom));
+  flex-shrink: 0;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+}
+
+.choice-btn-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.choice-btn-text strong {
+  font-size: calc(16px * var(--zoom));
+  color: var(--ink);
+}
+
+.choice-btn-text span {
+  font-size: calc(13px * var(--zoom));
+  color: var(--muted);
+}
+
+.choice-btn-arrow {
+  font-size: calc(22px * var(--zoom));
+  color: var(--muted);
+}
+
+/* Separador de abas (Entrar / Criar conta / Código) */
+.auth-tabs {
+  display: flex;
+  background: var(--paper);
+  border-radius: 12px;
+  padding: 4px;
+  gap: 4px;
+  margin-bottom: 22px;
+}
+
+.auth-tab {
+  flex: 1;
+  border: none;
+  background: transparent;
+  border-radius: 9px;
+  padding: 9px 4px;
+  font-size: calc(13px * var(--zoom));
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.auth-tab.active {
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+/* Campos de formulário */
+.field-label {
+  display: block;
+  font-size: calc(13px * var(--zoom));
+  font-weight: 700;
+  color: var(--muted);
+  margin: 0 0 14px;
+}
+
+.field-input {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  padding: 13px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  font-size: calc(16px * var(--zoom));
+  font-family: inherit;
+  color: var(--ink);
+}
+
+.field-input:focus {
+  outline: none;
+  border-color: var(--forest);
+  background: var(--card);
+}
+
+.primary-btn.full {
+  width: 100%;
+  padding: 15px;
+  font-size: calc(16px * var(--zoom));
+  box-shadow: 0 4px 14px rgba(47, 111, 94, 0.28);
+}
+
+.link-btn {
+  display: block;
+  width: 100%;
+  text-align: center;
+  background: none;
+  border: none;
+  color: var(--forest-dark);
+  font-weight: 700;
+  font-size: calc(13px * var(--zoom));
+  padding: 14px 0 0;
+}
+
+.setup-status {
+  text-align: center;
+  color: var(--muted);
+  font-size: calc(13px * var(--zoom));
+  min-height: 18px;
+  margin: 14px 0 0;
+}
+
+.field-with-toggle {
+  position: relative;
+  display: block;
+}
+
+.field-with-toggle .field-input {
+  padding-right: 46px;
+}
+
+.field-toggle {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 34px;
+  height: 34px;
+  border: none;
+  background: transparent;
+  font-size: calc(16px * var(--zoom));
+  opacity: 0.6;
+}
+
+.field-toggle:active { opacity: 1; }
+
+@keyframes setupFadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+.setup-card {
+  animation: setupFadeIn 0.35s ease both;
 }
 
 .pin-box {

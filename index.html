@@ -16,70 +16,107 @@
 
 <!-- ===================== CONFIGURAÇÃO INICIAL (conta + convite) ===================== -->
 <section id="view-setup" class="view">
+  <svg class="home-sunburst" viewBox="0 0 300 300" aria-hidden="true">
+    <circle cx="230" cy="70" r="130" fill="none" stroke="var(--amber)" stroke-width="1.5" opacity="0.35"/>
+    <g stroke="var(--amber)" stroke-width="1.5" opacity="0.35">
+      <line x1="230" y1="-20" x2="230" y2="30"/>
+      <line x1="230" y1="110" x2="230" y2="160"/>
+      <line x1="140" y1="70" x2="190" y2="70"/>
+      <line x1="270" y1="70" x2="320" y2="70"/>
+      <line x1="167" y1="7" x2="197" y2="37"/>
+      <line x1="263" y1="103" x2="293" y2="133"/>
+      <line x1="293" y1="7" x2="263" y2="37"/>
+      <line x1="197" y1="103" x2="167" y2="133"/>
+    </g>
+    <circle cx="230" cy="70" r="8" fill="var(--amber)" opacity="0.35"/>
+  </svg>
+
   <div class="setup-box">
     <div class="setup-brand">
       <span class="brand-mark" aria-hidden="true">◎</span>
       <span class="brand-name">Bússola Saúde</span>
     </div>
-    <p class="muted" style="text-align:center;">Vamos ligar este aparelho à família.</p>
+    <p class="setup-tagline">Consultas, medicamentos e documentos, em família.</p>
 
-    <div id="setup-choice">
-      <button id="setup-btn-patient" class="big-btn" style="margin-bottom:14px;">
-        <span class="big-btn-icon" aria-hidden="true">🧑</span>
-        <span>Este é o telemóvel da pessoa a ajudar</span>
+    <div id="setup-choice" class="setup-card">
+      <h2 class="setup-card-title">Vamos começar</h2>
+      <p class="setup-card-subtitle">De quem é este telemóvel?</p>
+      <button id="setup-btn-patient" class="choice-btn">
+        <span class="choice-btn-icon" aria-hidden="true">📱</span>
+        <span class="choice-btn-text">
+          <strong>É do meu familiar</strong>
+          <span>Vou usar um código de convite</span>
+        </span>
+        <span class="choice-btn-arrow" aria-hidden="true">›</span>
       </button>
-      <button id="setup-btn-caregiver" class="big-btn">
-        <span class="big-btn-icon" aria-hidden="true">👨‍👩‍👦</span>
-        <span>Sou cuidador (filho/a, cônjuge...)</span>
+      <button id="setup-btn-caregiver" class="choice-btn">
+        <span class="choice-btn-icon" aria-hidden="true">👤</span>
+        <span class="choice-btn-text">
+          <strong>É o meu telemóvel</strong>
+          <span>Entrar ou criar conta</span>
+        </span>
+        <span class="choice-btn-arrow" aria-hidden="true">›</span>
       </button>
     </div>
 
-    <div id="setup-patient" class="hidden">
-      <label>Código de convite (pede a um cuidador)
-        <input id="setup-patient-code" type="text" maxlength="8" placeholder="Ex.: A1B2C3" style="text-transform:uppercase;" />
+    <div id="setup-patient" class="setup-card hidden">
+      <h2 class="setup-card-title">Ligar este aparelho</h2>
+      <p class="setup-card-subtitle">Pede o código de convite a um cuidador da família.</p>
+      <label class="field-label">Código de convite
+        <input id="setup-patient-code" class="field-input" type="text" maxlength="8" autocomplete="off" autocapitalize="characters" placeholder="Ex.: A1B2C3" style="text-transform:uppercase;" />
       </label>
-      <button id="setup-patient-submit" class="primary-btn" style="width:100%;">Ligar este aparelho</button>
-      <p id="setup-patient-status" class="muted"></p>
+      <button id="setup-patient-submit" class="primary-btn full">Ligar este aparelho</button>
+      <p id="setup-patient-status" class="setup-status"></p>
+      <button class="link-btn" data-back-to-choice="1">← Voltar</button>
     </div>
 
-    <div id="setup-caregiver" class="hidden">
-      <div class="aidant-tabs">
-        <button class="tab-btn active" data-authtab="login">Entrar</button>
-        <button class="tab-btn" data-authtab="signup">Criar conta</button>
-        <button class="tab-btn" data-authtab="joincode">Tenho um código</button>
+    <div id="setup-caregiver" class="setup-card hidden">
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-authtab="login">Entrar</button>
+        <button class="auth-tab" data-authtab="signup">Criar conta</button>
+        <button class="auth-tab" data-authtab="joincode">Código</button>
       </div>
 
+      <h2 class="setup-card-title" id="auth-title">Entrar</h2>
+      <p class="setup-card-subtitle" id="auth-subtitle">Acede à tua conta de cuidador.</p>
+
       <div id="authtab-login">
-        <label>Email
-          <input id="login-email" type="email" placeholder="email@exemplo.com" />
+        <label class="field-label">Email
+          <input id="login-email" class="field-input" type="email" inputmode="email" autocomplete="email" placeholder="email@exemplo.com" />
         </label>
-        <label>Palavra-passe
-          <input id="login-password" type="password" placeholder="••••••••" />
+        <label class="field-label">Palavra-passe
+          <span class="field-with-toggle">
+            <input id="login-password" class="field-input" type="password" autocomplete="current-password" placeholder="••••••••" />
+            <button type="button" class="field-toggle" data-toggle-pw="login-password" aria-label="Mostrar palavra-passe">👁</button>
+          </span>
         </label>
-        <button id="btn-login" class="primary-btn" style="width:100%;">Entrar</button>
-        <button id="btn-forgot-password" class="ghost-btn small">Esqueci-me da palavra-passe</button>
+        <button id="btn-login" class="primary-btn full">Entrar</button>
+        <button id="btn-forgot-password" class="link-btn">Esqueci-me da palavra-passe</button>
       </div>
 
       <div id="authtab-signup" class="hidden">
-        <p class="muted">Cria a tua conta — isto cria também uma nova família.</p>
-        <label>Email
-          <input id="signup-email" type="email" placeholder="email@exemplo.com" />
+        <label class="field-label">Email
+          <input id="signup-email" class="field-input" type="email" inputmode="email" autocomplete="email" placeholder="email@exemplo.com" />
         </label>
-        <label>Palavra-passe (mínimo 6 caracteres)
-          <input id="signup-password" type="password" placeholder="••••••••" />
+        <label class="field-label">Palavra-passe (mínimo 6 caracteres)
+          <span class="field-with-toggle">
+            <input id="signup-password" class="field-input" type="password" autocomplete="new-password" placeholder="••••••••" />
+            <button type="button" class="field-toggle" data-toggle-pw="signup-password" aria-label="Mostrar palavra-passe">👁</button>
+          </span>
         </label>
-        <button id="btn-signup" class="primary-btn" style="width:100%;">Criar conta e família</button>
+        <button id="btn-signup" class="primary-btn full">Criar conta e família</button>
       </div>
 
       <div id="authtab-joincode" class="hidden">
-        <p class="muted">Já tens conta? Entra primeiro no separador "Entrar", depois volta aqui com o código de outro cuidador da família.</p>
-        <label>Código de convite
-          <input id="caregiver-join-code" type="text" maxlength="8" placeholder="Ex.: A1B2C3" style="text-transform:uppercase;" />
+        <p class="setup-hint">Já tens conta? Entra primeiro no separador "Entrar" e volta aqui com o código de outro cuidador.</p>
+        <label class="field-label">Código de convite
+          <input id="caregiver-join-code" class="field-input" type="text" maxlength="8" autocomplete="off" autocapitalize="characters" placeholder="Ex.: A1B2C3" style="text-transform:uppercase;" />
         </label>
-        <button id="btn-caregiver-join" class="primary-btn" style="width:100%;">Juntar-me à família</button>
+        <button id="btn-caregiver-join" class="primary-btn full">Juntar-me à família</button>
       </div>
 
-      <p id="auth-status" class="muted"></p>
+      <p id="auth-status" class="setup-status"></p>
+      <button class="link-btn" data-back-to-choice="1">← Voltar</button>
     </div>
   </div>
 </section>
