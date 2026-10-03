@@ -126,12 +126,27 @@ function stopListening() {
   unsubscribers = [];
 }
 
-function handleFirestoreError(err) {
+function handleFirestoreError(err, where) {
   console.error(err);
   showToast("Sem ligação — a app continua a funcionar, mas pode não estar atualizada.");
+  showDiagnostic((where || "?") + ": " + ((err && err.code) || "erro") + " — " + ((err && err.message) || ""));
+}
+
+// Linha de diagnóstico (Definições → Família): mostra a conta, a família e o último erro do Firestore.
+let diagLastError = "";
+function showDiagnostic(errorLine) {
+  if (errorLine) diagLastError = errorLine;
+  const el = $("#diag-info");
+  if (!el) return;
+  const uid = currentUser ? currentUser.uid : "(sem sessão)";
+  const mail = currentUser && currentUser.email ? currentUser.email : (currentUser && currentUser.isAnonymous ? "anónimo" : "-");
+  el.textContent = "Conta: " + mail + "\nUID: " + uid + "\nFamília: " + (familyId || "-") +
+    "\nLidos: consultas " + state.rdvs.length + ", medicamentos " + state.meds.length + ", documentos " + state.docs.length +
+    "\nÚltimo erro: " + (diagLastError || "nenhum");
 }
 
 function onDataChanged() {
+  showDiagnostic();
   state.rdvs.forEach((r) => { if (!r.exames) r.exames = []; if (r.perguntas === undefined) r.perguntas = ""; });
   renderHome();
   renderTodayMeds();
@@ -148,55 +163,56 @@ function startListening() {
   unsubscribers.push(onSnapshot(familyCollection("rdvs"), (snap) => {
     state.rdvs = snap.docs.map((d) => d.data());
     onDataChanged();
-  }, handleFirestoreError));
+  }, (e) => handleFirestoreError(e, "rdvs")));
 
   unsubscribers.push(onSnapshot(familyCollection("meds"), (snap) => {
     state.meds = snap.docs.map((d) => d.data());
     onDataChanged();
-  }, handleFirestoreError));
+  }, (e) => handleFirestoreError(e, "meds")));
 
   unsubscribers.push(onSnapshot(familyCollection("docs"), (snap) => {
     state.docs = snap.docs.map((d) => d.data());
     onDataChanged();
-  }, handleFirestoreError));
+  }, (e) => handleFirestoreError(e, "docs")));
 
   unsubscribers.push(onSnapshot(familyCollection("medLog"), (snap) => {
     const log = {};
     snap.docs.forEach((d) => { log[d.id] = d.data(); });
     state.medLog = log;
     onDataChanged();
-  }, handleFirestoreError));
+  }, (e) => handleFirestoreError(e, "medLog")));
 
   unsubscribers.push(onSnapshot(familyRef("meta", "settings"), (snap) => {
     if (snap.exists()) state.pin = snap.data().pin || "1234";
     onDataChanged();
-  }, handleFirestoreError));
+  }, (e) => handleFirestoreError(e, "meta/settings")));
 
   unsubscribers.push(onSnapshot(familyRef("meta", "profile"), (snap) => {
     state.perfil = snap.exists() ? snap.data() : {};
     onDataChanged();
-  }, handleFirestoreError));
+  }, (e) => handleFirestoreError(e, "meta/profile")));
 
   unsubscribers.push(onSnapshot(familyRef("meta", "contacts"), (snap) => {
     state.contatos = snap.exists() ? snap.data() : {};
-  }, handleFirestoreError));
+  }, (e) => handleFirestoreError(e, "meta/contacts")));
 
   unsubscribers.push(onSnapshot(familyCollection("presence"), (snap) => {
     familyPresence = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
     renderFamilyPresence();
-  }, handleFirestoreError));
+  }, (e) => handleFirestoreError(e, "presence")));
 
   unsubscribers.push(onSnapshot(familyCollection("joinRequests"), (snap) => {
     pendingJoinRequests = snap.docs.map((d) => ({ uid: d.id, ...d.data() }));
     renderJoinRequests();
-  }, handleFirestoreError));
+  }, (e) => handleFirestoreError(e, "joinRequests")));
 
   unsubscribers.push(onSnapshot(familyRef(), (snap) => {
     if (snap.exists()) $("#family-code-value").textContent = snap.data().inviteCode || "------";
-  }, handleFirestoreError));
+  }, (e) => handleFirestoreError(e, "family")));
 }
 
 function onFamilyResolved() {
+  showDiagnostic();
   showView("view-pere");
   startListening();
   sendPresence();
