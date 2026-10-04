@@ -15,6 +15,7 @@ const LANG_KEY = "bussola-lang";
 const TRANSLATIONS = {
   en: {
     "Bússola Saúde": "Bússola Saúde",
+    "Para lembretes à hora certa, permite os alarmes exatos para esta app.": "For on-time reminders, allow exact alarms for this app.",
     "{nome} das {h} — ainda não confirmado": "{nome} at {h} — not confirmed yet",
     "Consultas, medicamentos e documentos, em família.": "Appointments, medication and documents, together as a family.",
     "Vamos começar": "Let's get started",
@@ -294,6 +295,7 @@ const TRANSLATIONS = {
 
   fr: {
     "Bússola Saúde": "Bússola Saúde",
+    "Para lembretes à hora certa, permite os alarmes exatos para esta app.": "Pour des rappels à l'heure exacte, autorisez les alarmes exactes pour cette application.",
     "{nome} das {h} — ainda não confirmado": "{nome} de {h} — pas encore confirmé",
     "Consultas, medicamentos e documentos, em família.": "Rendez-vous, médicaments et documents, en famille.",
     "Vamos começar": "Commençons",
@@ -571,6 +573,7 @@ const TRANSLATIONS = {
 
   es: {
     "Bússola Saúde": "Bússola Saúde",
+    "Para lembretes à hora certa, permite os alarmes exatos para esta app.": "Para recordatorios puntuales, permite las alarmas exactas para esta aplicación.",
     "{nome} das {h} — ainda não confirmado": "{nome} de las {h} — aún sin confirmar",
     "Consultas, medicamentos e documentos, em família.": "Citas, medicamentos y documentos, en familia.",
     "Vamos começar": "Empecemos",

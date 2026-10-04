@@ -1,4 +1,5 @@
 /* ===================== FIREBASE ===================== */
+import { isNative, requestNativePermission, nativePermissionState, nativeNotifyNow, syncNativeReminders, exactAlarmsAllowed, openExactAlarmSettings } from "./native.js";
 import { t, applyI18n, getLocale, getLang, setLang, LANGS } from "./i18n.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
@@ -127,27 +128,14 @@ function stopListening() {
   unsubscribers = [];
 }
 
-function handleFirestoreError(err, where) {
+function handleFirestoreError(err) {
   console.error(err);
-  showToast(t("Sem ligação — a app continua a funcionar, mas pode não estar atualizada."));
-  showDiagnostic((where || "?") + ": " + ((err && err.code) || "erro") + " — " + ((err && err.message) || ""));
-}
-
-// Linha de diagnóstico (Definições → Família): mostra a conta, a família e o último erro do Firestore.
-let diagLastError = "";
-function showDiagnostic(errorLine) {
-  if (errorLine) diagLastError = errorLine;
-  const el = $("#diag-info");
-  if (!el) return;
-  const uid = currentUser ? currentUser.uid : "(sem sessão)";
-  const mail = currentUser && currentUser.email ? currentUser.email : (currentUser && currentUser.isAnonymous ? "anónimo" : "-");
-  el.textContent = "Conta: " + mail + "\nUID: " + uid + "\nFamília: " + (familyId || "-") +
-    "\nLidos: consultas " + state.rdvs.length + ", medicamentos " + state.meds.length + ", documentos " + state.docs.length +
-    "\nÚltimo erro: " + (diagLastError || "nenhum");
+  if (err && err.code === "permission-denied") showToast(t("Sem permissão no servidor (regras de segurança)."));
+  else showToast(t("Sem ligação — a app continua a funcionar, mas pode não estar atualizada."));
 }
 
 function onDataChanged() {
-  showDiagnostic();
+  scheduleNativeSync();
   state.rdvs.forEach((r) => { if (!r.exames) r.exames = []; if (r.perguntas === undefined) r.perguntas = ""; });
   renderHome();
   renderTodayMeds();
@@ -164,56 +152,55 @@ function startListening() {
   unsubscribers.push(onSnapshot(familyCollection("rdvs"), (snap) => {
     state.rdvs = snap.docs.map((d) => d.data());
     onDataChanged();
-  }, (e) => handleFirestoreError(e, "rdvs")));
+  }, handleFirestoreError));
 
   unsubscribers.push(onSnapshot(familyCollection("meds"), (snap) => {
     state.meds = snap.docs.map((d) => d.data());
     onDataChanged();
-  }, (e) => handleFirestoreError(e, "meds")));
+  }, handleFirestoreError));
 
   unsubscribers.push(onSnapshot(familyCollection("docs"), (snap) => {
     state.docs = snap.docs.map((d) => d.data());
     onDataChanged();
-  }, (e) => handleFirestoreError(e, "docs")));
+  }, handleFirestoreError));
 
   unsubscribers.push(onSnapshot(familyCollection("medLog"), (snap) => {
     const log = {};
     snap.docs.forEach((d) => { log[d.id] = d.data(); });
     state.medLog = log;
     onDataChanged();
-  }, (e) => handleFirestoreError(e, "medLog")));
+  }, handleFirestoreError));
 
   unsubscribers.push(onSnapshot(familyRef("meta", "settings"), (snap) => {
     if (snap.exists()) state.pin = snap.data().pin || "1234";
     onDataChanged();
-  }, (e) => handleFirestoreError(e, "meta/settings")));
+  }, handleFirestoreError));
 
   unsubscribers.push(onSnapshot(familyRef("meta", "profile"), (snap) => {
     state.perfil = snap.exists() ? snap.data() : {};
     onDataChanged();
-  }, (e) => handleFirestoreError(e, "meta/profile")));
+  }, handleFirestoreError));
 
   unsubscribers.push(onSnapshot(familyRef("meta", "contacts"), (snap) => {
     state.contatos = snap.exists() ? snap.data() : {};
-  }, (e) => handleFirestoreError(e, "meta/contacts")));
+  }, handleFirestoreError));
 
   unsubscribers.push(onSnapshot(familyCollection("presence"), (snap) => {
     familyPresence = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
     renderFamilyPresence();
-  }, (e) => handleFirestoreError(e, "presence")));
+  }, handleFirestoreError));
 
   unsubscribers.push(onSnapshot(familyCollection("joinRequests"), (snap) => {
     pendingJoinRequests = snap.docs.map((d) => ({ uid: d.id, ...d.data() }));
     renderJoinRequests();
-  }, (e) => handleFirestoreError(e, "joinRequests")));
+  }, handleFirestoreError));
 
   unsubscribers.push(onSnapshot(familyRef(), (snap) => {
     if (snap.exists()) $("#family-code-value").textContent = snap.data().inviteCode || "------";
-  }, (e) => handleFirestoreError(e, "family")));
+  }, handleFirestoreError));
 }
 
 function onFamilyResolved() {
-  showDiagnostic();
   showView("view-pere");
   startListening();
   sendPresence();
@@ -936,7 +923,7 @@ function renderAidant() {
   fillPerfilForm();
   fillContatosForm();
   renderJoinRequests();
-  $("#notif-status").textContent = notifStatusLabel();
+  refreshNotifStatus();
 }
 
 function renderAidantRdvs() {
@@ -1381,14 +1368,59 @@ function notifStatusLabel() {
   return t("Notificações não ativadas.");
 }
 
+async function refreshNotifStatus() {
+  let label = notifStatusLabel();
+  if (isNative()) {
+    const st = await nativePermissionState();
+    label = st === "granted" ? t("Notificações ativadas ✓")
+      : st === "denied" ? t("Notificações bloqueadas — reative nas definições do telemóvel.")
+      : t("Notificações não ativadas.");
+  }
+  $("#notif-status").textContent = label;
+}
+
 $("#btn-enable-notif").addEventListener("click", async () => {
+  if (isNative()) {
+    const perm = await requestNativePermission();
+    await refreshNotifStatus();
+    if (perm === "granted") {
+      showToast(t("Notificações ativadas."));
+      scheduleNativeSync();
+      if (!(await exactAlarmsAllowed())) {
+        showToast(t("Para lembretes à hora certa, permite os alarmes exatos para esta app."));
+        openExactAlarmSettings();
+      }
+    }
+    return;
+  }
   if (!("Notification" in window)) { showToast(t("Não suportado neste dispositivo.")); return; }
   const perm = await Notification.requestPermission();
-  $("#notif-status").textContent = notifStatusLabel();
+  await refreshNotifStatus();
   if (perm === "granted") showToast(t("Notificações ativadas."));
 });
 
+/* Lembretes nativos (Android): reagendados sempre que os dados mudam ou a app volta ao primeiro plano */
+let nativeSyncTimer = null;
+function nativeTexts() {
+  const bring = (x) => t("Não esqueças de levar: {x}.", { x });
+  return {
+    medTitle: t("💊 Medicamento"),
+    rdvInOneHour: t("📅 Consulta daqui a 1 hora"),
+    rdvTomorrow: t("📅 Consulta amanhã"),
+    bring,
+    rdvTomorrowBody: (r) => t("{medecin} — {motif} às {h}.", { medecin: r.medecin, motif: r.motif || "", h: r.heure }) +
+      (r.precisaLevarExames && r.levarExamesTexto ? " " + bring(r.levarExamesTexto) : "")
+  };
+}
+function scheduleNativeSync() {
+  if (!isNative()) return;
+  clearTimeout(nativeSyncTimer);
+  nativeSyncTimer = setTimeout(() => syncNativeReminders(state, nativeTexts()), 1500);
+}
+document.addEventListener("visibilitychange", () => { if (!document.hidden) scheduleNativeSync(); });
+
 function fireNotification(title, body, tag) {
+  if (isNative()) { nativeNotifyNow(title, body, tag); return; }
   if (!("Notification" in window) || Notification.permission !== "granted") return;
   if (navigator.serviceWorker && navigator.serviceWorker.controller) {
     navigator.serviceWorker.controller.postMessage({ type: "SHOW_NOTIFICATION", payload: { title, body, tag } });
@@ -1404,7 +1436,7 @@ function checkReminders() {
   const today = todayStr();
   const hhmm = now.toTimeString().slice(0, 5);
 
-  state.meds.forEach((m) => {
+  if (!isNative()) state.meds.forEach((m) => {
     (m.heures || []).forEach((h) => {
       const tag = `med_${m.id}_${today}_${h}`;
       const logKey = `${today}_${m.id}_${h}`;
@@ -1415,7 +1447,7 @@ function checkReminders() {
     });
   });
 
-  state.rdvs.forEach((r) => {
+  if (!isNative()) state.rdvs.forEach((r) => {
     if (!r.date || !r.heure) return;
     const rdvDateTime = new Date(r.date + "T" + r.heure);
     const diffMin = (rdvDateTime - now) / 60000;

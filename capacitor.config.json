@@ -1,0 +1,14 @@
+{
+  "appId": "com.adteixeira.bussolasaude",
+  "appName": "Bússola Saúde",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false
+  },
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_icon",
+      "iconColor": "#1B2A4A"
+    }
+  }
+}

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Bússola Saúde</string>
+    <string name="title_activity_main">Bússola Saúde</string>
+    <string name="package_name">com.adteixeira.bussolasaude</string>
+    <string name="custom_url_scheme">com.adteixeira.bussolasaude</string>
+</resources>
