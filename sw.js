@@ -1,8 +1,9 @@
-const CACHE_NAME = "bussola-saude-v2";
+const CACHE_NAME = "bussola-saude-v3";
 const FILES_TO_CACHE = [
   "./index.html",
   "./style.css",
   "./app.js",
+  "./i18n.js",
   "./manifest.json",
   "./icon-192.png",
   "./icon-512.png"

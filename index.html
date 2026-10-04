@@ -36,6 +36,11 @@
       <span class="brand-mark" aria-hidden="true">◎</span>
       <span class="brand-name">Bússola Saúde</span>
     </div>
+    <div class="lang-picker">
+      <label for="lang-select-setup"><span aria-hidden="true">🌐</span> Idioma</label>
+      <select id="lang-select-setup" class="field-input lang-select" data-lang-select></select>
+    </div>
+
     <p class="setup-tagline">Consultas, medicamentos e documentos, em família.</p>
 
     <div id="setup-choice" class="setup-card">
@@ -360,6 +365,10 @@
       <div id="family-presence-list"></div>
     </div>
     <div class="settings-card">
+      <h3>Idioma</h3>
+      <select id="lang-select-settings" class="field-input lang-select" data-lang-select aria-label="Idioma"></select>
+    </div>
+    <div class="settings-card">
       <h3>Código PIN do cuidador</h3>
       <p class="muted">Altere o código de 4 dígitos usado para entrar nesta área.</p>
       <input id="new-pin" class="pin-input small" type="text" inputmode="numeric" maxlength="4" placeholder="Novo código" />
@@ -373,7 +382,7 @@
     </div>
     <div class="settings-card">
       <h3>Cópia de segurança dos dados</h3>
-      <p class="muted">Todos os dados ficam guardados apenas neste dispositivo. Exporte uma cópia regularmente.</p>
+      <p class="muted">Os dados da família ficam guardados na nuvem. Exporte uma cópia de vez em quando.</p>
       <button id="btn-export" class="secondary-btn">Exportar dados</button>
     </div>
   </div>

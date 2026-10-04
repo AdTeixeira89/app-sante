@@ -1,4 +1,5 @@
 /* ===================== FIREBASE ===================== */
+import { t, applyI18n, getLocale, getLang, setLang, LANGS } from "./i18n.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getAuth, onAuthStateChanged, signInAnonymously,
@@ -92,7 +93,7 @@ async function resolveInviteCode(code) {
 async function requestJoinFamily(targetFamilyId, uid) {
   await setDoc(doc(db, "families", targetFamilyId, "joinRequests", uid), {
     requestedAt: Date.now(),
-    label: localStorage.getItem(DEVICE_LABEL_KEY) || "Novo aparelho"
+    label: localStorage.getItem(DEVICE_LABEL_KEY) || t("Novo aparelho")
   });
 }
 
@@ -128,7 +129,7 @@ function stopListening() {
 
 function handleFirestoreError(err, where) {
   console.error(err);
-  showToast("Sem ligação — a app continua a funcionar, mas pode não estar atualizada.");
+  showToast(t("Sem ligação — a app continua a funcionar, mas pode não estar atualizada."));
   showDiagnostic((where || "?") + ": " + ((err && err.code) || "erro") + " — " + ((err && err.message) || ""));
 }
 
@@ -224,7 +225,7 @@ async function fsSetItem(colName, id, data, merge = false) {
     await setDoc(familyRef(colName, id), data, { merge });
   } catch (e) {
     console.error(e);
-    showToast("Guardado neste aparelho — falha a sincronizar (verifica a ligação).");
+    showToast(t("Guardado neste aparelho — falha a sincronizar (verifica a ligação)."));
   }
 }
 
@@ -233,13 +234,13 @@ async function fsDeleteItem(colName, id) {
     await deleteDoc(familyRef(colName, id));
   } catch (e) {
     console.error(e);
-    showToast("Eliminado neste aparelho — falha a sincronizar (verifica a ligação).");
+    showToast(t("Eliminado neste aparelho — falha a sincronizar (verifica a ligação)."));
   }
 }
 
 /* ---------- Presença (última atividade de cada aparelho) ---------- */
 async function sendPresence() {
-  const label = localStorage.getItem(DEVICE_LABEL_KEY) || "Aparelho sem nome";
+  const label = localStorage.getItem(DEVICE_LABEL_KEY) || t("Aparelho sem nome");
   try {
     await setDoc(familyRef("presence", deviceId), { label, lastSeen: Date.now() });
   } catch (e) { /* offline: sem problema, tenta na próxima */ }
@@ -249,7 +250,7 @@ function renderFamilyPresence() {
   const el = $("#family-presence-list");
   if (!el) return;
   if (familyPresence.length === 0) {
-    el.innerHTML = `<div class="empty-state">Ainda sem outros aparelhos ligados a este código.</div>`;
+    el.innerHTML = `<div class="empty-state">${t("Ainda sem outros aparelhos ligados a este código.")}</div>`;
     return;
   }
   const now = Date.now();
@@ -259,12 +260,12 @@ function renderFamilyPresence() {
     .map((p) => {
       const diffMin = Math.max(0, Math.round((now - (p.lastSeen || 0)) / 60000));
       let when;
-      if (diffMin < 2) when = "agora mesmo";
-      else if (diffMin < 60) when = `há ${diffMin} min`;
-      else if (diffMin < 24 * 60) when = `há ${Math.round(diffMin / 60)} h`;
-      else when = `há ${Math.round(diffMin / 1440)} dias`;
+      if (diffMin < 2) when = t("agora mesmo");
+      else if (diffMin < 60) when = t("há {n} min", { n: diffMin });
+      else if (diffMin < 24 * 60) when = t("há {n} h", { n: Math.round(diffMin / 60) });
+      else when = t("há {n} dias", { n: Math.round(diffMin / 1440) });
       const online = diffMin < 3;
-      return `<div class="presence-item"><span class="presence-dot ${online ? "online" : ""}"></span>${escapeHTML(p.label || "Aparelho")} — ${when}</div>`;
+      return `<div class="presence-item"><span class="presence-dot ${online ? "online" : ""}"></span>${escapeHTML(p.label || t("Aparelho"))} — ${when}</div>`;
     }).join("");
 }
 
@@ -288,7 +289,7 @@ function todayStr() {
 
 function formatDatePT(dateStr) {
   const d = new Date(dateStr + "T00:00:00");
-  return d.toLocaleDateString("pt-PT", { weekday: "long", day: "numeric", month: "long" });
+  return d.toLocaleDateString(getLocale(), { weekday: "long", day: "numeric", month: "long" });
 }
 
 function showToast(msg) {
@@ -366,9 +367,9 @@ function renderHome() {
 function renderGreeting() {
   const el = $("#home-greeting");
   const nome = state.perfil && state.perfil.nome;
-  const dateLabel = capitalize(new Date().toLocaleDateString("pt-PT", { weekday: "long", day: "numeric", month: "long" }));
+  const dateLabel = capitalize(new Date().toLocaleDateString(getLocale(), { weekday: "long", day: "numeric", month: "long" }));
   el.innerHTML = nome
-    ? `Olá, ${escapeHTML(nome)} 👋<span class="greeting-date">${dateLabel}</span>`
+    ? `${escapeHTML(t("Olá, {nome} 👋", { nome }))}<span class="greeting-date">${dateLabel}</span>`
     : `<span class="greeting-date">${dateLabel}</span>`;
 }
 
@@ -407,20 +408,20 @@ function renderNextTicket() {
   const el = $("#next-ticket");
   const upcoming = getUpcomingRdvs();
   if (upcoming.length === 0) {
-    el.innerHTML = `<div class="ticket-empty">Sem consultas marcadas 🎉</div>`;
+    el.innerHTML = `<div class="ticket-empty">${t("Sem consultas marcadas 🎉")}</div>`;
     return;
   }
   const r = upcoming[0];
   el.innerHTML = `
-    <div class="ticket-eyebrow">Próxima consulta</div>
-    <div class="ticket-title">${escapeHTML(r.medecin || "Consulta")}</div>
+    <div class="ticket-eyebrow">${t("Próxima consulta")}</div>
+    <div class="ticket-title">${escapeHTML(r.medecin || t("Consulta"))}</div>
     <div class="ticket-sub">${escapeHTML(r.motif || "")}</div>
     <div class="ticket-meta">
-      <div><span>Data</span>${capitalize(formatDatePT(r.date))}</div>
-      <div><span>Hora</span>${r.heure || "—"}</div>
+      <div><span>${t("Data")}</span>${capitalize(formatDatePT(r.date))}</div>
+      <div><span>${t("Hora")}</span>${r.heure || "—"}</div>
     </div>
-    ${r.lieu ? `<button class="rdv-card-address" style="color:var(--amber);margin-top:14px;background:none;border:none;padding:0;font-family:inherit;cursor:pointer;" data-nav="${escapeHTML(r.lieu)}">🗺️ Ver itinerário — ${escapeHTML(r.lieu)}</button>` : ""}
-    ${r.precisaLevarExames && r.levarExamesTexto ? `<div class="rdv-card-levar" style="margin-top:10px;">📎 <strong>Levar:</strong> ${escapeHTML(r.levarExamesTexto)}</div>` : ""}
+    ${r.lieu ? `<button class="rdv-card-address" style="color:var(--amber);margin-top:14px;background:none;border:none;padding:0;font-family:inherit;cursor:pointer;" data-nav="${escapeHTML(r.lieu)}">🗺️ ${escapeHTML(t("Ver itinerário — {lieu}", { lieu: r.lieu }))}</button>` : ""}
+    ${r.precisaLevarExames && r.levarExamesTexto ? `<div class="rdv-card-levar" style="margin-top:10px;">📎 <strong>${t("Levar:")}</strong> ${escapeHTML(r.levarExamesTexto)}</div>` : ""}
   `;
 }
 
@@ -438,7 +439,7 @@ function renderHomeMissedMeds() {
   });
   if (missed.length === 0) { el.innerHTML = ""; return; }
   el.innerHTML = missed.map((m) =>
-    `<div class="missed-chip">🔴 ${escapeHTML(m.nome)} das ${m.heure} — ainda não confirmado</div>`
+    `<div class="missed-chip">🔴 ${escapeHTML(t("{nome} das {h} — ainda não confirmado", { nome: m.nome, h: m.heure }))}</div>`
   ).join("");
 }
 
@@ -506,7 +507,7 @@ async function fileToDataURL(file) {
     });
   }
   if (dataUrl.length > MAX_FILE_CHARS) {
-    showToast("Ficheiro demasiado grande (máx. ~450 KB). Reduz o PDF ou usa uma foto.");
+    showToast(t("Ficheiro demasiado grande (máx. ~450 KB). Reduz o PDF ou usa uma foto."));
     return null;
   }
   return dataUrl;
@@ -514,7 +515,7 @@ async function fileToDataURL(file) {
 
 function recordTooBig(record) {
   if (JSON.stringify(record).length > MAX_RECORD_CHARS) {
-    showToast("Demasiados anexos neste registo — remove alguns para poder guardar.");
+    showToast(t("Demasiados anexos neste registo — remove alguns para poder guardar."));
     return true;
   }
   return false;
@@ -525,8 +526,8 @@ function filePreviewHTML(dataUrl) {
   if (!dataUrl) return "";
   dataUrl = safeDataUrl(dataUrl);
   if (!dataUrl) return "";
-  if (isPdfData(dataUrl)) return `<div class="doc-file-icon">📄 Ficheiro PDF anexado</div>`;
-  return `<img src="${dataUrl}" alt="Pré-visualização" />`;
+  if (isPdfData(dataUrl)) return `<div class="doc-file-icon">${t("📄 Ficheiro PDF anexado")}</div>`;
+  return `<img src="${dataUrl}" alt="${t("Pré-visualização")}" />`;
 }
 
 // Miniatura em cartão (listas)
@@ -534,16 +535,16 @@ function fileThumbHTML(dataUrl, alt) {
   dataUrl = safeDataUrl(dataUrl);
   if (!dataUrl) return "";
   if (isPdfData(dataUrl)) {
-    return `<div class="doc-file-icon">📄</div><a class="doc-file-link" href="${dataUrl}" target="_blank" rel="noopener">Abrir ficheiro PDF</a>`;
+    return `<div class="doc-file-icon">📄</div><a class="doc-file-link" href="${dataUrl}" target="_blank" rel="noopener">${t("Abrir ficheiro PDF")}</a>`;
   }
-  return `<img class="doc-thumb" src="${dataUrl}" alt="${escapeHTML(alt || "Documento")}" />`;
+  return `<img class="doc-thumb" src="${dataUrl}" alt="${escapeHTML(alt || t("Documento"))}" />`;
 }
 
 function medStatusLabel(entry, heureSched) {
   if (!entry) return null;
-  if (entry.status === "sauteado") return { text: "Saltado", cls: "status-skip" };
-  if (entry.status === "a_horario") return { text: `Tomado às ${heureSched}`, cls: "status-ok" };
-  if (entry.status === "agora") return { text: `Tomado às ${entry.horaReal}`, cls: "status-ok" };
+  if (entry.status === "sauteado") return { text: t("Saltado"), cls: "status-skip" };
+  if (entry.status === "a_horario") return { text: t("Tomado às {h}", { h: heureSched }), cls: "status-ok" };
+  if (entry.status === "agora") return { text: t("Tomado às {h}", { h: entry.horaReal }), cls: "status-ok" };
   return null;
 }
 
@@ -581,23 +582,23 @@ function renderTodayMeds() {
     const actionsHTML = entry
       ? `<div class="med-card-status ${label.cls}">
            <span>${label.text}</span>
-           <button class="med-card-edit" data-editlog="${logKey}">Alterar</button>
+           <button class="med-card-edit" data-editlog="${logKey}">${t("Alterar")}</button>
          </div>`
       : `<div class="med-card-buttons">
-           <button class="med-btn med-btn-skip" data-med-action="sauteado" data-key="${logKey}" data-heure="${s.heure}">Saltar</button>
-           <button class="med-btn med-btn-ontime" data-med-action="a_horario" data-key="${logKey}" data-heure="${s.heure}">Às ${s.heure}</button>
-           <button class="med-btn med-btn-now" data-med-action="agora" data-key="${logKey}" data-heure="${s.heure}">Agora</button>
+           <button class="med-btn med-btn-skip" data-med-action="sauteado" data-key="${logKey}" data-heure="${s.heure}">${t("Saltar")}</button>
+           <button class="med-btn med-btn-ontime" data-med-action="a_horario" data-key="${logKey}" data-heure="${s.heure}">${t("Às {h}", { h: s.heure })}</button>
+           <button class="med-btn med-btn-now" data-med-action="agora" data-key="${logKey}" data-heure="${s.heure}">${t("Agora")}</button>
          </div>`;
 
     return `
       <div class="med-card ${cardClass}">
         <div class="med-card-info">
-          ${safeDataUrl(s.foto) ? `<img class="med-thumb" src="${safeDataUrl(s.foto)}" alt="Caixa de ${escapeHTML(s.nom)}" />` : ""}
+          ${safeDataUrl(s.foto) ? `<img class="med-thumb" src="${safeDataUrl(s.foto)}" alt="${escapeHTML(t("Caixa de {nom}", { nom: s.nom }))}" />` : ""}
           <div class="med-card-text">
             <div class="med-card-time">${s.heure}</div>
             <div class="med-card-name">${escapeHTML(s.nom)}</div>
           </div>
-          <button class="med-info-btn" data-info-med="${s.medId}" aria-label="Mais informação">ℹ️</button>
+          <button class="med-info-btn" data-info-med="${s.medId}" aria-label="${t("Mais informação")}">ℹ️</button>
         </div>
         ${actionsHTML}
       </div>
@@ -643,7 +644,7 @@ function renderRdvList(mode) {
   const effectiveMode = mode || (activeTab ? activeTab.dataset.rdvtab : "proximas");
   const list = effectiveMode === "passadas" ? getPastRdvs() : getUpcomingRdvs();
   if (list.length === 0) {
-    el.innerHTML = `<div class="empty-state">${effectiveMode === "passadas" ? "Sem consultas passadas." : "Ainda não há consultas registadas."}</div>`;
+    el.innerHTML = `<div class="empty-state">${effectiveMode === "passadas" ? t("Sem consultas passadas.") : t("Ainda não há consultas registadas.")}</div>`;
     return;
   }
   el.innerHTML = list.map(rdvCardHTML).join("");
@@ -662,14 +663,14 @@ function rdvCardHTML(r) {
   return `
     <div class="rdv-card">
       <div class="rdv-card-date">${capitalize(formatDatePT(r.date))}${r.heure ? " · " + r.heure : ""}</div>
-      <div class="rdv-card-medecin">${escapeHTML(r.medecin || "Consulta")}</div>
+      <div class="rdv-card-medecin">${escapeHTML(r.medecin || t("Consulta"))}</div>
       ${r.motif ? `<div class="rdv-card-motif">${escapeHTML(r.motif)}</div>` : ""}
       ${r.lieu ? `<button class="rdv-card-address" style="background:none;border:none;padding:0;font-family:inherit;cursor:pointer;" data-nav="${escapeHTML(r.lieu)}">🗺️ ${escapeHTML(r.lieu)}</button>` : ""}
-      ${r.perguntas ? `<div class="rdv-card-perguntas">📝 <strong>Perguntas ao médico:</strong> ${escapeHTML(r.perguntas)}</div>` : ""}
-      ${r.precisaLevarExames && r.levarExamesTexto ? `<div class="rdv-card-levar">📎 <strong>Levar:</strong> ${escapeHTML(r.levarExamesTexto)}</div>` : ""}
-      ${r.photo ? fileThumbHTML(r.photo, "Documento da consulta") : ""}
-      ${exames.length ? `<div class="rdv-card-lieu">${exames.length} exame(s) anexado(s)</div>
-        <div class="anexos-list">${exames.map((ex) => `<div class="anexo-chip">${isPdfData(ex.data) ? "📄" : `<img src="${safeDataUrl(ex.data)}" alt="${escapeHTML(ex.nome || "Exame")}" />`}</div>`).join("")}</div>` : ""}
+      ${r.perguntas ? `<div class="rdv-card-perguntas">📝 <strong>${t("Perguntas ao médico:")}</strong> ${escapeHTML(r.perguntas)}</div>` : ""}
+      ${r.precisaLevarExames && r.levarExamesTexto ? `<div class="rdv-card-levar">📎 <strong>${t("Levar:")}</strong> ${escapeHTML(r.levarExamesTexto)}</div>` : ""}
+      ${r.photo ? fileThumbHTML(r.photo, t("Documento da consulta")) : ""}
+      ${exames.length ? `<div class="rdv-card-lieu">${t("{n} exame(s) anexado(s)", { n: exames.length })}</div>
+        <div class="anexos-list">${exames.map((ex) => `<div class="anexo-chip">${isPdfData(ex.data) ? "📄" : `<img src="${safeDataUrl(ex.data)}" alt="${escapeHTML(ex.nome || t("Exame"))}" />`}</div>`).join("")}</div>` : ""}
     </div>
   `;
 }
@@ -677,13 +678,13 @@ function rdvCardHTML(r) {
 /* ===================== DOCUMENTOS (leitura + adicionar) ===================== */
 function getAllDocEntries() {
   const avulsos = state.docs.map((d) => ({
-    kind: "doc", id: d.id, data: d.data, titulo: d.titulo, subtitulo: d.tipo, categoria: d.tipo || "Outro", file: d.file
+    kind: "doc", id: d.id, data: d.data, titulo: d.titulo, subtitulo: d.tipo ? t(d.tipo) : "", categoria: d.tipo || "Outro", file: d.file
   }));
 
   const rdvPrincipais = state.rdvs
     .filter((r) => r.photo)
     .map((r) => ({
-      kind: "rdv", id: r.id, data: r.date, titulo: r.medecin || "Documento da consulta",
+      kind: "rdv", id: r.id, data: r.date, titulo: r.medecin || t("Documento da consulta"),
       subtitulo: r.motif || "", categoria: "Convocatória", file: r.photo
     }));
 
@@ -691,8 +692,8 @@ function getAllDocEntries() {
   state.rdvs.forEach((r) => {
     (r.exames || []).forEach((ex) => {
       rdvExames.push({
-        kind: "rdv", id: r.id, data: r.date, titulo: ex.nome || "Exame anexado",
-        subtitulo: r.medecin ? `Consulta: ${r.medecin}` : "", categoria: "Resultado", file: ex.data
+        kind: "rdv", id: r.id, data: r.date, titulo: ex.nome || t("Exame anexado"),
+        subtitulo: r.medecin ? t("Consulta: {m}", { m: r.medecin }) : "", categoria: "Resultado", file: ex.data
       });
     });
   });
@@ -718,7 +719,7 @@ function renderDocsList() {
   const filtered = currentDocTab === "todos" ? all : all.filter((d) => d.categoria === currentDocTab);
   lastDocEntries = filtered;
   if (filtered.length === 0) {
-    el.innerHTML = `<div class="empty-state">${currentDocTab === "todos" ? 'Ainda não há documentos. Toca em "Adicionar documento" ou junta uma foto a uma consulta.' : "Nenhum documento nesta categoria."}</div>`;
+    el.innerHTML = `<div class="empty-state">${currentDocTab === "todos" ? t('Ainda não há documentos. Toca em "Adicionar documento" ou junta uma foto a uma consulta.') : t("Nenhum documento nesta categoria.")}</div>`;
     return;
   }
   el.innerHTML = filtered.map((d, i) => `
@@ -728,8 +729,8 @@ function renderDocsList() {
       ${d.subtitulo ? `<div class="rdv-card-motif">${escapeHTML(d.subtitulo)}</div>` : ""}
       ${fileThumbHTML(d.file, d.titulo)}
       <div class="doc-actions">
-        <button class="doc-action-btn" data-doc-share="${i}">📤 Partilhar</button>
-        <button class="doc-action-btn" data-doc-print="${i}">🖨️ Imprimir</button>
+        <button class="doc-action-btn" data-doc-share="${i}">${t("📤 Partilhar")}</button>
+        <button class="doc-action-btn" data-doc-print="${i}">${t("🖨️ Imprimir")}</button>
       </div>
     </div>
   `).join("");
@@ -743,32 +744,32 @@ function renderDocsList() {
 }
 
 async function shareFile(entry) {
-  if (!entry || !entry.file) { showToast("Sem ficheiro para partilhar."); return; }
+  if (!entry || !entry.file) { showToast(t("Sem ficheiro para partilhar.")); return; }
   try {
     const blob = await (await fetch(entry.file)).blob();
     const ext = isPdfData(entry.file) ? "pdf" : "jpg";
     const file = new File([blob], `${(entry.titulo || "documento").replace(/[^\w\-]/g, "_")}.${ext}`, { type: blob.type });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], title: entry.titulo || "Documento" });
+      await navigator.share({ files: [file], title: entry.titulo || t("Documento") });
     } else if (navigator.share) {
-      await navigator.share({ title: entry.titulo || "Documento" });
+      await navigator.share({ title: entry.titulo || t("Documento") });
     } else {
-      showToast("Partilha não disponível neste aparelho. Usa Imprimir.");
+      showToast(t("Partilha não disponível neste aparelho. Usa Imprimir."));
     }
   } catch (err) {
-    if (err.name !== "AbortError") showToast("Não foi possível partilhar o documento.");
+    if (err.name !== "AbortError") showToast(t("Não foi possível partilhar o documento."));
   }
 }
 
 function printFile(entry) {
-  if (!entry || !entry.file) { showToast("Sem ficheiro para imprimir."); return; }
+  if (!entry || !entry.file) { showToast(t("Sem ficheiro para imprimir.")); return; }
   const w = window.open("", "_blank");
-  if (!w) { showToast("Autoriza janelas pop-up para poder imprimir."); return; }
+  if (!w) { showToast(t("Autoriza janelas pop-up para poder imprimir.")); return; }
   if (isPdfData(entry.file)) {
     w.location.href = safeDataUrl(entry.file) || "about:blank";
   } else {
     w.document.write(`
-      <html><head><title>${escapeHTML(entry.titulo || "Documento")}</title>
+      <html><head><title>${escapeHTML(entry.titulo || t("Documento"))}</title>
       <style>body{margin:0;display:flex;justify-content:center;align-items:flex-start;background:#fff;}
       img{max-width:100%;}</style>
       </head><body><img src="${safeDataUrl(entry.file)}" onload="window.print()" /></body></html>
@@ -786,7 +787,7 @@ $("#f-doc-cancel").addEventListener("click", closeDocModal);
 function openDocModal(id) {
   editingDocId = id;
   const d = id ? state.docs.find((x) => x.id === id) : null;
-  $("#doc-modal-title").textContent = id ? "Editar documento" : "Novo documento";
+  $("#doc-modal-title").textContent = id ? t("Editar documento") : t("Novo documento");
   $("#f-doc-titulo").value = d ? d.titulo : "";
   $("#f-doc-tipo").value = d ? d.tipo : "Receita";
   $("#f-doc-file").value = "";
@@ -822,7 +823,7 @@ $("#f-doc-file").addEventListener("change", async (e) => {
 
 $("#f-doc-save").addEventListener("click", () => {
   const titulo = $("#f-doc-titulo").value.trim();
-  if (!titulo) { showToast("Indica um título para o documento."); return; }
+  if (!titulo) { showToast(t("Indica um título para o documento.")); return; }
   const preview = $("#f-doc-file-preview");
   const existing = editingDocId ? state.docs.find((x) => x.id === editingDocId) : null;
   const fileValue = preview.dataset.value || (existing ? existing.file : null);
@@ -846,7 +847,7 @@ $("#f-doc-save").addEventListener("click", () => {
   fsSetItem("docs", record.id, record);
   delete preview.dataset.value;
   closeDocModal();
-  showToast("Documento guardado.");
+  showToast(t("Documento guardado."));
 });
 
 $("#f-doc-delete").addEventListener("click", () => {
@@ -856,7 +857,7 @@ $("#f-doc-delete").addEventListener("click", () => {
   renderDocsList();
   fsDeleteItem("docs", id);
   closeDocModal();
-  showToast("Documento eliminado.");
+  showToast(t("Documento eliminado."));
 });
 
 /* ===================== MEDICAMENTOS (leitura) ===================== */
@@ -865,8 +866,8 @@ function showMedInfo(medId) {
   if (!m) return;
   $("#info-modal-title").textContent = m.nom;
   let html = "";
-  html += `<div class="info-block"><strong>Para que serve</strong>${m.trata ? escapeHTML(m.trata) : "Não indicado — pergunta ao médico ou farmacêutico."}</div>`;
-  if (m.consigne) html += `<div class="info-block"><strong>Como tomar</strong>${escapeHTML(m.consigne)}</div>`;
+  html += `<div class="info-block"><strong>${t("Para que serve")}</strong>${m.trata ? escapeHTML(m.trata) : t("Não indicado — pergunta ao médico ou farmacêutico.")}</div>`;
+  if (m.consigne) html += `<div class="info-block"><strong>${t("Como tomar")}</strong>${escapeHTML(m.consigne)}</div>`;
   $("#info-modal-body").innerHTML = html;
   $("#modal-info").classList.remove("hidden");
 }
@@ -903,22 +904,22 @@ function renderHistorico() {
     const medId = parts[1];
     const heure = parts[2];
     const med = state.meds.find((m) => m.id === medId);
-    return { date, heure, nome: med ? med.nom : "Medicamento removido", ...val };
+    return { date, heure, nome: med ? med.nom : t("Medicamento removido"), ...val };
   });
   const missed = computeMissedEntries(7);
   const all = [...recorded, ...missed].sort((a, b) => (b.date + b.heure).localeCompare(a.date + a.heure));
 
   if (all.length === 0) {
-    el.innerHTML = `<div class="empty-state">Ainda sem registos de tomas.</div>`;
+    el.innerHTML = `<div class="empty-state">${t("Ainda sem registos de tomas.")}</div>`;
     return;
   }
 
   el.innerHTML = all.map((e) => {
     let label, cls;
-    if (e.status === "sauteado") { label = "Saltado"; cls = "hist-skip"; }
-    else if (e.status === "a_horario") { label = `Tomado às ${e.heure}`; cls = "hist-ok"; }
-    else if (e.status === "agora") { label = `Tomado às ${e.horaReal} (previsto ${e.heure})`; cls = "hist-ok"; }
-    else { label = "Esquecido"; cls = "hist-missed"; }
+    if (e.status === "sauteado") { label = t("Saltado"); cls = "hist-skip"; }
+    else if (e.status === "a_horario") { label = t("Tomado às {h}", { h: e.heure }); cls = "hist-ok"; }
+    else if (e.status === "agora") { label = t("Tomado às {h} (previsto {p})", { h: e.horaReal, p: e.heure }); cls = "hist-ok"; }
+    else { label = t("Esquecido"); cls = "hist-missed"; }
     return `
       <div class="hist-item ${cls}">
         <div class="hist-item-date">${capitalize(formatDatePT(e.date))} · ${e.heure}</div>
@@ -943,16 +944,16 @@ function renderAidantRdvs() {
   if (!el) return;
   const list = [...state.rdvs].sort((a, b) => (a.date + a.heure).localeCompare(b.date + b.heure));
   if (list.length === 0) {
-    el.innerHTML = `<div class="empty-state">Sem consultas. Adiciona uma acima.</div>`;
+    el.innerHTML = `<div class="empty-state">${t("Sem consultas. Adiciona uma acima.")}</div>`;
     return;
   }
   el.innerHTML = list.map((r) => `
     <div class="aidant-item">
       <div class="aidant-item-main">
-        <strong>${escapeHTML(r.medecin || "Consulta")}</strong>
+        <strong>${escapeHTML(r.medecin || t("Consulta"))}</strong>
         <span>${capitalize(formatDatePT(r.date))} ${r.heure ? "· " + r.heure : ""}</span>
       </div>
-      <button class="edit-link" data-edit-rdv="${r.id}">Editar</button>
+      <button class="edit-link" data-edit-rdv="${r.id}">${t("Editar")}</button>
     </div>
   `).join("");
   el.querySelectorAll("[data-edit-rdv]").forEach((btn) => {
@@ -964,17 +965,17 @@ function renderAidantMeds() {
   const el = $("#aidant-meds-list");
   if (!el) return;
   if (state.meds.length === 0) {
-    el.innerHTML = `<div class="empty-state">Sem medicamentos. Adiciona um acima.</div>`;
+    el.innerHTML = `<div class="empty-state">${t("Sem medicamentos. Adiciona um acima.")}</div>`;
     return;
   }
   el.innerHTML = state.meds.map((m) => `
     <div class="aidant-item">
-      ${safeDataUrl(m.foto) ? `<img class="med-thumb" src="${safeDataUrl(m.foto)}" alt="Caixa de ${escapeHTML(m.nom)}" />` : ""}
+      ${safeDataUrl(m.foto) ? `<img class="med-thumb" src="${safeDataUrl(m.foto)}" alt="${escapeHTML(t("Caixa de {nom}", { nom: m.nom }))}" />` : ""}
       <div class="aidant-item-main">
         <strong>${escapeHTML(m.nom)}</strong>
-        <span>${m.trata ? escapeHTML(m.trata) + " · " : ""}${(m.heures || []).join(", ") || "Sem horário"}</span>
+        <span>${m.trata ? escapeHTML(m.trata) + " · " : ""}${(m.heures || []).join(", ") || t("Sem horário")}</span>
       </div>
-      <button class="edit-link" data-edit-med="${m.id}">Editar</button>
+      <button class="edit-link" data-edit-med="${m.id}">${t("Editar")}</button>
     </div>
   `).join("");
   el.querySelectorAll("[data-edit-med]").forEach((btn) => {
@@ -992,7 +993,7 @@ $("#f-rdv-cancel").addEventListener("click", closeRdvModal);
 function openRdvModal(id) {
   editingRdvId = id;
   const r = id ? state.rdvs.find((x) => x.id === id) : null;
-  $("#rdv-modal-title").textContent = id ? "Editar consulta" : "Nova consulta";
+  $("#rdv-modal-title").textContent = id ? t("Editar consulta") : t("Nova consulta");
   $("#f-rdv-medecin").value = r ? r.medecin : "";
   $("#f-rdv-motif").value = r ? r.motif : "";
   $("#f-rdv-date").value = r ? r.date : todayStr();
@@ -1045,8 +1046,8 @@ function renderExamesEditor() {
   if (currentExames.length === 0) { el.innerHTML = ""; return; }
   el.innerHTML = currentExames.map((ex, i) => `
     <div class="anexo-chip" data-idx="${i}">
-      ${isPdfData(ex.data) ? "📄" : `<img src="${safeDataUrl(ex.data)}" alt="${escapeHTML(ex.nome || "Exame")}" />`}
-      <button type="button" data-remove-exame="${i}" aria-label="Remover">✕</button>
+      ${isPdfData(ex.data) ? "📄" : `<img src="${safeDataUrl(ex.data)}" alt="${escapeHTML(ex.nome || t("Exame"))}" />`}
+      <button type="button" data-remove-exame="${i}" aria-label="${t("Remover")}">✕</button>
     </div>
   `).join("");
   el.querySelectorAll("[data-remove-exame]").forEach((btn) => {
@@ -1072,7 +1073,7 @@ $("#f-rdv-exame-input").addEventListener("change", async (e) => {
 $("#f-rdv-save").addEventListener("click", () => {
   const medecin = $("#f-rdv-medecin").value.trim();
   const date = $("#f-rdv-date").value;
-  if (!medecin || !date) { showToast("Indica pelo menos o médico e a data."); return; }
+  if (!medecin || !date) { showToast(t("Indica pelo menos o médico e a data.")); return; }
   const photoPreview = $("#f-rdv-photo-preview");
   const existing = editingRdvId ? state.rdvs.find((x) => x.id === editingRdvId) : null;
   const photoValue = photoPreview.dataset.value || (existing ? existing.photo : null);
@@ -1102,7 +1103,7 @@ $("#f-rdv-save").addEventListener("click", () => {
   fsSetItem("rdvs", record.id, record);
   delete photoPreview.dataset.value;
   closeRdvModal();
-  showToast("Consulta guardada.");
+  showToast(t("Consulta guardada."));
 });
 
 $("#f-rdv-delete").addEventListener("click", () => {
@@ -1112,7 +1113,7 @@ $("#f-rdv-delete").addEventListener("click", () => {
   renderAidantRdvs();
   fsDeleteItem("rdvs", id);
   closeRdvModal();
-  showToast("Consulta eliminada.");
+  showToast(t("Consulta eliminada."));
 });
 
 /* ---------- Modal Medicamento ---------- */
@@ -1125,7 +1126,7 @@ $("#f-med-add-heure").addEventListener("click", () => addHeureRow(""));
 function openMedModal(id) {
   editingMedId = id;
   const m = id ? state.meds.find((x) => x.id === id) : null;
-  $("#med-modal-title").textContent = id ? "Editar medicamento" : "Novo medicamento";
+  $("#med-modal-title").textContent = id ? t("Editar medicamento") : t("Novo medicamento");
   $("#f-med-nom").value = m ? m.nom : "";
   $("#f-med-trata").value = m ? (m.trata || "") : "";
   $("#f-med-consigne").value = m ? m.consigne : "";
@@ -1166,14 +1167,14 @@ $("#f-med-photo").addEventListener("change", async (e) => {
 function addHeureRow(value) {
   const wrap = document.createElement("div");
   wrap.className = "heure-chip";
-  wrap.innerHTML = `<input type="time" value="${value || ""}" /><button type="button" aria-label="Remover">✕</button>`;
+  wrap.innerHTML = `<input type="time" value="${value || ""}" /><button type="button" aria-label="${t("Remover")}">✕</button>`;
   wrap.querySelector("button").addEventListener("click", () => wrap.remove());
   $("#f-med-heures-list").appendChild(wrap);
 }
 
 $("#f-med-save").addEventListener("click", () => {
   const nom = $("#f-med-nom").value.trim();
-  if (!nom) { showToast("Indica o nome do medicamento."); return; }
+  if (!nom) { showToast(t("Indica o nome do medicamento.")); return; }
   const heures = [...$$("#f-med-heures-list input")].map((i) => i.value).filter(Boolean).sort();
 
   const medPhotoPreview = $("#f-med-photo-preview");
@@ -1200,7 +1201,7 @@ $("#f-med-save").addEventListener("click", () => {
   fsSetItem("meds", record.id, record);
   delete medPhotoPreview.dataset.value;
   closeMedModal();
-  showToast("Medicamento guardado.");
+  showToast(t("Medicamento guardado."));
 });
 
 $("#f-med-delete").addEventListener("click", () => {
@@ -1210,17 +1211,17 @@ $("#f-med-delete").addEventListener("click", () => {
   renderAidantMeds();
   fsDeleteItem("meds", id);
   closeMedModal();
-  showToast("Medicamento eliminado.");
+  showToast(t("Medicamento eliminado."));
 });
 
 /* ===================== DEFINIÇÕES ===================== */
 $("#save-pin").addEventListener("click", () => {
   const val = $("#new-pin").value.trim();
-  if (!/^\d{4}$/.test(val)) { showToast("O código deve ter 4 dígitos."); return; }
+  if (!/^\d{4}$/.test(val)) { showToast(t("O código deve ter 4 dígitos.")); return; }
   state.pin = val;
   $("#new-pin").value = "";
   fsSetItem("meta", "settings", { pin: val }, true);
-  showToast("Código atualizado.");
+  showToast(t("Código atualizado."));
 });
 
 $("#btn-export").addEventListener("click", () => {
@@ -1252,7 +1253,7 @@ $("#save-perfil").addEventListener("click", () => {
   state.perfil = record;
   renderGreeting();
   fsSetItem("meta", "profile", record, true);
-  showToast("Perfil guardado.");
+  showToast(t("Perfil guardado."));
 });
 
 /* ---------- Contactos de emergência ---------- */
@@ -1271,7 +1272,7 @@ $("#save-contatos").addEventListener("click", () => {
   };
   state.contatos = record;
   fsSetItem("meta", "contacts", record, true);
-  showToast("Contactos guardados.");
+  showToast(t("Contactos guardados."));
 });
 
 function renderEmergencyModal() {
@@ -1279,11 +1280,11 @@ function renderEmergencyModal() {
   const c = state.contatos || {};
   const list = [c.contato1, c.contato2].filter((x) => x && x.tel);
   if (list.length === 0) {
-    el.innerHTML = `<p class="muted">Nenhum contacto configurado ainda. Pede a um familiar para o adicionar em Definições → Contactos de emergência.</p>`;
+    el.innerHTML = `<p class="muted">${t("Nenhum contacto configurado ainda. Pede a um familiar para o adicionar em Definições → Contactos de emergência.")}</p>`;
     return;
   }
   el.innerHTML = list.map((c) =>
-    `<a class="emergencia-contact-btn" href="tel:${escapeHTML(String(c.tel).replace(/[^\d+*#]/g, ""))}">📞 Ligar a ${escapeHTML(c.nome || "familiar")}</a>`
+    `<a class="emergencia-contact-btn" href="tel:${escapeHTML(String(c.tel).replace(/[^\d+*#]/g, ""))}">📞 ${escapeHTML(t("Ligar a {nome}", { nome: c.nome || t("familiar") }))}</a>`
   ).join("");
 }
 
@@ -1314,7 +1315,7 @@ $("#btn-zoom-text").addEventListener("click", () => {
   localStorage.setItem(ZOOM_KEY, next);
   applyZoom();
   const labels = { 1: "normal", 1.2: "grande", 1.4: "muito grande" };
-  showToast(`Tamanho do texto: ${labels[next]}`);
+  showToast(t("Tamanho do texto: {x}", { x: t(labels[next]) }));
 });
 
 /* ---------- Família (convite + aprovação) ---------- */
@@ -1322,9 +1323,9 @@ $("#btn-copy-code").addEventListener("click", async () => {
   const code = $("#family-code-value").textContent.trim();
   try {
     await navigator.clipboard.writeText(code);
-    showToast("Código copiado.");
+    showToast(t("Código copiado."));
   } catch (e) {
-    showToast("Não foi possível copiar automaticamente — copia manualmente: " + code);
+    showToast(t("Não foi possível copiar automaticamente — copia manualmente: {code}", { code }));
   }
 });
 
@@ -1332,29 +1333,29 @@ function renderJoinRequests() {
   const el = $("#join-requests-list");
   if (!el) return;
   if (pendingJoinRequests.length === 0) {
-    el.innerHTML = `<p class="muted">Nenhum pedido de acesso pendente.</p>`;
+    el.innerHTML = `<p class="muted">${t("Nenhum pedido de acesso pendente.")}</p>`;
     return;
   }
   el.innerHTML = pendingJoinRequests.map((r) => `
     <div class="aidant-item">
       <div class="aidant-item-main">
-        <strong>${escapeHTML(r.label || "Novo aparelho")}</strong>
-        <span>Pediu para entrar</span>
+        <strong>${escapeHTML(r.label || t("Novo aparelho"))}</strong>
+        <span>${t("Pediu para entrar")}</span>
       </div>
-      <button class="secondary-btn small" data-approve="${r.uid}">Aprovar</button>
-      <button class="edit-link" data-reject="${r.uid}">Recusar</button>
+      <button class="secondary-btn small" data-approve="${r.uid}">${t("Aprovar")}</button>
+      <button class="edit-link" data-reject="${r.uid}">${t("Recusar")}</button>
     </div>
   `).join("");
   el.querySelectorAll("[data-approve]").forEach((btn) => {
     btn.addEventListener("click", async () => {
       await approveJoinRequest(btn.dataset.approve);
-      showToast("Acesso aprovado.");
+      showToast(t("Acesso aprovado."));
     });
   });
   el.querySelectorAll("[data-reject]").forEach((btn) => {
     btn.addEventListener("click", async () => {
       await rejectJoinRequest(btn.dataset.reject);
-      showToast("Pedido recusado.");
+      showToast(t("Pedido recusado."));
     });
   });
 }
@@ -1374,17 +1375,17 @@ $("#btn-logout").addEventListener("click", async () => {
 
 /* ===================== NOTIFICAÇÕES ===================== */
 function notifStatusLabel() {
-  if (!("Notification" in window)) return "Notificações não suportadas neste dispositivo.";
-  if (Notification.permission === "granted") return "Notificações ativadas ✓";
-  if (Notification.permission === "denied") return "Notificações bloqueadas — reative nas definições do telemóvel.";
-  return "Notificações não ativadas.";
+  if (!("Notification" in window)) return t("Notificações não suportadas neste dispositivo.");
+  if (Notification.permission === "granted") return t("Notificações ativadas ✓");
+  if (Notification.permission === "denied") return t("Notificações bloqueadas — reative nas definições do telemóvel.");
+  return t("Notificações não ativadas.");
 }
 
 $("#btn-enable-notif").addEventListener("click", async () => {
-  if (!("Notification" in window)) { showToast("Não suportado neste dispositivo."); return; }
+  if (!("Notification" in window)) { showToast(t("Não suportado neste dispositivo.")); return; }
   const perm = await Notification.requestPermission();
   $("#notif-status").textContent = notifStatusLabel();
-  if (perm === "granted") showToast("Notificações ativadas.");
+  if (perm === "granted") showToast(t("Notificações ativadas."));
 });
 
 function fireNotification(title, body, tag) {
@@ -1409,7 +1410,7 @@ function checkReminders() {
       const logKey = `${today}_${m.id}_${h}`;
       if (h === hhmm && !firedTags.has(tag) && !state.medLog[logKey]) {
         firedTags.add(tag);
-        fireNotification("💊 Medicamento", `${m.nom}${m.consigne ? " — " + m.consigne : ""}`, tag);
+        fireNotification(t("💊 Medicamento"), `${m.nom}${m.consigne ? " — " + m.consigne : ""}`, tag);
       }
     });
   });
@@ -1418,12 +1419,12 @@ function checkReminders() {
     if (!r.date || !r.heure) return;
     const rdvDateTime = new Date(r.date + "T" + r.heure);
     const diffMin = (rdvDateTime - now) / 60000;
-    const levarSuffix = r.precisaLevarExames && r.levarExamesTexto ? ` Não esqueças de levar: ${r.levarExamesTexto}.` : "";
+    const levarSuffix = r.precisaLevarExames && r.levarExamesTexto ? " " + t("Não esqueças de levar: {x}.", { x: r.levarExamesTexto }) : "";
 
     const tag1h = `rdv1h_${r.id}`;
     if (diffMin > 0 && diffMin <= 60 && !firedTags.has(tag1h)) {
       firedTags.add(tag1h);
-      fireNotification("📅 Consulta daqui a 1 hora", `${r.medecin} — ${r.motif || ""}.${levarSuffix}`, tag1h);
+      fireNotification(t("📅 Consulta daqui a 1 hora"), `${r.medecin} — ${r.motif || ""}.${levarSuffix}`, tag1h);
     }
 
     const vespera = new Date(rdvDateTime);
@@ -1432,7 +1433,7 @@ function checkReminders() {
     const tagVespera = `rdvvespera_${r.id}`;
     if (Math.abs(now - vespera) < 60000 && !firedTags.has(tagVespera)) {
       firedTags.add(tagVespera);
-      fireNotification("📅 Consulta amanhã", `${r.medecin} — ${r.motif || ""} às ${r.heure}.${levarSuffix}`, tagVespera);
+      fireNotification(t("📅 Consulta amanhã"), t("{medecin} — {motif} às {h}.", { medecin: r.medecin, motif: r.motif || "", h: r.heure }) + levarSuffix, tagVespera);
     }
   });
 
@@ -1445,7 +1446,7 @@ function checkReminders() {
         const tagAlert = `caregiveralert_${logKey}`;
         if (isSlotLate(h, now) && !firedTags.has(tagAlert)) {
           firedTags.add(tagAlert);
-          fireNotification("Ainda não confirmado", `${m.nom} das ${h} — o Papa ainda não confirmou.`, tagAlert);
+          fireNotification(t("Ainda não confirmado"), t("{nom} das {h} — o paciente ainda não confirmou.", { nom: m.nom, h }), tagAlert);
         }
       });
     });
@@ -1462,6 +1463,14 @@ if ("serviceWorker" in navigator) {
 }
 
 checkReminders();
+
+// Idioma: preenche os seletores, traduz o HTML estático e recarrega ao mudar de língua
+$$("[data-lang-select]").forEach((sel) => {
+  sel.innerHTML = LANGS.map((l) => `<option value="${l.code}">${l.label}</option>`).join("");
+  sel.value = getLang();
+  sel.addEventListener("change", () => { setLang(sel.value); location.reload(); });
+});
+applyI18n(document.body);
 
 // Mostra o ecrã de configuração até sabermos a que família este aparelho pertence
 showView("view-setup");
@@ -1486,7 +1495,7 @@ onAuthStateChanged(auth, async (user) => {
     // se não existir, o utilizador ainda tem de escolher "paciente" ou "cuidador" no ecrã de configuração
   } catch (e) {
     console.error(e);
-    showToast("Sem ligação à internet.");
+    showToast(t("Sem ligação à internet."));
   }
 });
 
@@ -1494,7 +1503,7 @@ onAuthStateChanged(auth, async (user) => {
 $("#setup-btn-patient").addEventListener("click", () => {
   $("#setup-choice").classList.add("hidden");
   $("#setup-patient").classList.remove("hidden");
-  if (!auth.currentUser) signInAnonymously(auth).catch(() => showToast("Sem ligação à internet."));
+  if (!auth.currentUser) signInAnonymously(auth).catch(() => showToast(t("Sem ligação à internet.")));
 });
 
 $("#setup-btn-caregiver").addEventListener("click", () => {
@@ -1504,14 +1513,14 @@ $("#setup-btn-caregiver").addEventListener("click", () => {
 
 $("#setup-patient-submit").addEventListener("click", async () => {
   const code = $("#setup-patient-code").value.trim();
-  if (!code) { $("#setup-patient-status").textContent = "Introduz o código."; return; }
+  if (!code) { $("#setup-patient-status").textContent = t("Introduz o código."); return; }
   try {
     if (!auth.currentUser) await signInAnonymously(auth);
     const targetFamilyId = await resolveInviteCode(code);
-    if (!targetFamilyId) { $("#setup-patient-status").textContent = "Código inválido."; return; }
+    if (!targetFamilyId) { $("#setup-patient-status").textContent = t("Código inválido."); return; }
     await requestJoinFamily(targetFamilyId, auth.currentUser.uid);
     listenForOwnApproval(auth.currentUser.uid);
-    $("#setup-patient-status").textContent = "✓ Pedido enviado. A aguardar aprovação de um cuidador...";
+    $("#setup-patient-status").textContent = t("✓ Pedido enviado. A aguardar aprovação de um cuidador...");
   } catch (e) {
     console.error(e);
     $("#setup-patient-status").textContent = authErrorMessage(e, "Não foi possível enviar o pedido.");
@@ -1532,8 +1541,8 @@ $$("[data-authtab]").forEach((btn) => {
     $("#authtab-" + btn.dataset.authtab).classList.remove("hidden");
     $("#auth-status").textContent = "";
     const copy = AUTH_TAB_COPY[btn.dataset.authtab];
-    $("#auth-title").textContent = copy.title;
-    $("#auth-subtitle").textContent = copy.subtitle;
+    $("#auth-title").textContent = t(copy.title);
+    $("#auth-subtitle").textContent = t(copy.subtitle);
   });
 });
 
@@ -1551,7 +1560,7 @@ $$("[data-toggle-pw]").forEach((btn) => {
     const showing = input.type === "text";
     input.type = showing ? "password" : "text";
     btn.textContent = showing ? "👁" : "🙈";
-    btn.setAttribute("aria-label", showing ? "Mostrar palavra-passe" : "Ocultar palavra-passe");
+    btn.setAttribute("aria-label", showing ? t("Mostrar palavra-passe") : t("Ocultar palavra-passe"));
   });
 });
 
@@ -1571,16 +1580,16 @@ function authErrorMessage(e, fallback) {
     "auth/operation-not-allowed": "O início de sessão por email não está ativado neste projeto (Firebase → Authentication).",
     "permission-denied": "Sem permissão no servidor (regras de segurança)."
   };
-  return map[code] || (fallback + (code ? " (" + code + ")" : ""));
+  return t(map[code] || fallback) + (map[code] ? "" : (code ? " (" + code + ")" : ""));
 }
 
 $("#btn-login").addEventListener("click", async () => {
   const email = $("#login-email").value.trim();
   const password = $("#login-password").value;
-  if (!email || !password) { $("#auth-status").textContent = "Preenche o email e a palavra-passe."; return; }
+  if (!email || !password) { $("#auth-status").textContent = t("Preenche o email e a palavra-passe."); return; }
   try {
     await loginCaregiver(email, password);
-    $("#auth-status").textContent = "A entrar...";
+    $("#auth-status").textContent = t("A entrar...");
   } catch (e) {
     console.error(e);
     $("#auth-status").textContent = authErrorMessage(e, "Não foi possível entrar.");
@@ -1589,10 +1598,10 @@ $("#btn-login").addEventListener("click", async () => {
 
 $("#btn-forgot-password").addEventListener("click", async () => {
   const email = $("#login-email").value.trim();
-  if (!email) { $("#auth-status").textContent = "Escreve o teu email para receberes o link."; return; }
+  if (!email) { $("#auth-status").textContent = t("Escreve o teu email para receberes o link."); return; }
   try {
     await sendPasswordResetEmail(auth, email);
-    $("#auth-status").textContent = "Email enviado — verifica a tua caixa de entrada.";
+    $("#auth-status").textContent = t("Email enviado — verifica a tua caixa de entrada.");
   } catch (e) {
     $("#auth-status").textContent = authErrorMessage(e, "Não foi possível enviar o email.");
   }
@@ -1601,7 +1610,7 @@ $("#btn-forgot-password").addEventListener("click", async () => {
 $("#btn-signup").addEventListener("click", async () => {
   const email = $("#signup-email").value.trim();
   const password = $("#signup-password").value;
-  if (!email || password.length < 6) { $("#auth-status").textContent = "Email válido e palavra-passe com 6+ caracteres."; return; }
+  if (!email || password.length < 6) { $("#auth-status").textContent = t("Email válido e palavra-passe com 6+ caracteres."); return; }
   try {
     const newFamilyId = await signUpCaregiver(email, password);
     familyId = newFamilyId;
@@ -1617,18 +1626,18 @@ $("#btn-signup").addEventListener("click", async () => {
 $("#btn-caregiver-join").addEventListener("click", async () => {
   const email = $("#login-email").value.trim() || $("#signup-email").value.trim();
   const code = $("#caregiver-join-code").value.trim();
-  if (!code) { $("#auth-status").textContent = "Introduz o código de convite."; return; }
+  if (!code) { $("#auth-status").textContent = t("Introduz o código de convite."); return; }
   try {
     if (!auth.currentUser) {
-      $("#auth-status").textContent = "Cria a tua conta ou entra primeiro (separador Entrar/Criar conta) antes de usares um código.";
+      $("#auth-status").textContent = t("Cria a tua conta ou entra primeiro (separador Entrar/Criar conta) antes de usares um código.");
       return;
     }
     const targetFamilyId = await resolveInviteCode(code);
-    if (!targetFamilyId) { $("#auth-status").textContent = "Código inválido."; return; }
+    if (!targetFamilyId) { $("#auth-status").textContent = t("Código inválido."); return; }
     await requestJoinFamily(targetFamilyId, auth.currentUser.uid);
     localStorage.setItem(CAREGIVER_FLAG_KEY, "1");
     listenForOwnApproval(auth.currentUser.uid);
-    $("#auth-status").textContent = "✓ Pedido enviado. A aguardar aprovação de outro cuidador...";
+    $("#auth-status").textContent = t("✓ Pedido enviado. A aguardar aprovação de outro cuidador...");
   } catch (e) {
     console.error(e);
     $("#auth-status").textContent = authErrorMessage(e, "Não foi possível enviar o pedido.");
