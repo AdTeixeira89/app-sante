@@ -276,8 +276,14 @@ function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 }
 
+function dateToStr(d) {
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return d.getFullYear() + "-" + m + "-" + day; // data local (não UTC)
+}
+
 function todayStr() {
-  return new Date().toISOString().slice(0, 10);
+  return dateToStr(new Date());
 }
 
 function formatDatePT(dateStr) {
@@ -439,9 +445,17 @@ function renderHomeMissedMeds() {
 function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
 function escapeHTML(str) {
-  const div = document.createElement("div");
-  div.textContent = str || "";
-  return div.innerHTML;
+  return String(str == null ? "" : str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+// Só aceita imagens/PDF em data: URL (evita injetar atributos ou esquemas estranhos vindos da base de dados)
+function safeDataUrl(v) {
+  return typeof v === "string" && /^data:(image\/(jpeg|png|gif|webp)|application\/pdf);base64,[A-Za-z0-9+/=]*$/.test(v) ? v : "";
 }
 
 /* ---------- Ficheiros (fotos e PDFs) ---------- */
@@ -475,18 +489,41 @@ function compressImage(file, maxDim = 1200, quality = 0.72) {
   });
 }
 
-function fileToDataURL(file) {
-  if (file.type && file.type.startsWith("image/")) return compressImage(file);
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+// Cada documento do Firestore tem um limite de 1 MiB: ficheiros acima deste tamanho nunca sincronizariam.
+const MAX_FILE_CHARS = 600000;      // ~450 KB de ficheiro original
+const MAX_RECORD_CHARS = 950000;    // margem de segurança para o documento inteiro
+
+async function fileToDataURL(file) {
+  let dataUrl;
+  if (file.type && file.type.startsWith("image/")) {
+    dataUrl = await compressImage(file);
+  } else {
+    dataUrl = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+  if (dataUrl.length > MAX_FILE_CHARS) {
+    showToast("Ficheiro demasiado grande (máx. ~450 KB). Reduz o PDF ou usa uma foto.");
+    return null;
+  }
+  return dataUrl;
+}
+
+function recordTooBig(record) {
+  if (JSON.stringify(record).length > MAX_RECORD_CHARS) {
+    showToast("Demasiados anexos neste registo — remove alguns para poder guardar.");
+    return true;
+  }
+  return false;
 }
 
 // Pré-visualização grande (dentro dos formulários)
 function filePreviewHTML(dataUrl) {
+  if (!dataUrl) return "";
+  dataUrl = safeDataUrl(dataUrl);
   if (!dataUrl) return "";
   if (isPdfData(dataUrl)) return `<div class="doc-file-icon">📄 Ficheiro PDF anexado</div>`;
   return `<img src="${dataUrl}" alt="Pré-visualização" />`;
@@ -494,11 +531,12 @@ function filePreviewHTML(dataUrl) {
 
 // Miniatura em cartão (listas)
 function fileThumbHTML(dataUrl, alt) {
+  dataUrl = safeDataUrl(dataUrl);
   if (!dataUrl) return "";
   if (isPdfData(dataUrl)) {
     return `<div class="doc-file-icon">📄</div><a class="doc-file-link" href="${dataUrl}" target="_blank" rel="noopener">Abrir ficheiro PDF</a>`;
   }
-  return `<img class="doc-thumb" src="${dataUrl}" alt="${alt || "Documento"}" />`;
+  return `<img class="doc-thumb" src="${dataUrl}" alt="${escapeHTML(alt || "Documento")}" />`;
 }
 
 function medStatusLabel(entry, heureSched) {
@@ -554,7 +592,7 @@ function renderTodayMeds() {
     return `
       <div class="med-card ${cardClass}">
         <div class="med-card-info">
-          ${s.foto ? `<img class="med-thumb" src="${s.foto}" alt="Caixa de ${escapeHTML(s.nom)}" />` : ""}
+          ${safeDataUrl(s.foto) ? `<img class="med-thumb" src="${safeDataUrl(s.foto)}" alt="Caixa de ${escapeHTML(s.nom)}" />` : ""}
           <div class="med-card-text">
             <div class="med-card-time">${s.heure}</div>
             <div class="med-card-name">${escapeHTML(s.nom)}</div>
@@ -631,7 +669,7 @@ function rdvCardHTML(r) {
       ${r.precisaLevarExames && r.levarExamesTexto ? `<div class="rdv-card-levar">📎 <strong>Levar:</strong> ${escapeHTML(r.levarExamesTexto)}</div>` : ""}
       ${r.photo ? fileThumbHTML(r.photo, "Documento da consulta") : ""}
       ${exames.length ? `<div class="rdv-card-lieu">${exames.length} exame(s) anexado(s)</div>
-        <div class="anexos-list">${exames.map((ex) => `<div class="anexo-chip">${isPdfData(ex.data) ? "📄" : `<img src="${ex.data}" alt="${escapeHTML(ex.nome || "Exame")}" />`}</div>`).join("")}</div>` : ""}
+        <div class="anexos-list">${exames.map((ex) => `<div class="anexo-chip">${isPdfData(ex.data) ? "📄" : `<img src="${safeDataUrl(ex.data)}" alt="${escapeHTML(ex.nome || "Exame")}" />`}</div>`).join("")}</div>` : ""}
     </div>
   `;
 }
@@ -727,13 +765,13 @@ function printFile(entry) {
   const w = window.open("", "_blank");
   if (!w) { showToast("Autoriza janelas pop-up para poder imprimir."); return; }
   if (isPdfData(entry.file)) {
-    w.location.href = entry.file;
+    w.location.href = safeDataUrl(entry.file) || "about:blank";
   } else {
     w.document.write(`
       <html><head><title>${escapeHTML(entry.titulo || "Documento")}</title>
       <style>body{margin:0;display:flex;justify-content:center;align-items:flex-start;background:#fff;}
       img{max-width:100%;}</style>
-      </head><body><img src="${entry.file}" onload="window.print()" /></body></html>
+      </head><body><img src="${safeDataUrl(entry.file)}" onload="window.print()" /></body></html>
     `);
     w.document.close();
   }
@@ -775,6 +813,7 @@ $("#f-doc-file").addEventListener("change", async (e) => {
   const file = e.target.files[0];
   if (!file) return;
   const dataUrl = await fileToDataURL(file);
+  if (!dataUrl) { e.target.value = ""; return; }
   const preview = $("#f-doc-file-preview");
   preview.innerHTML = filePreviewHTML(dataUrl);
   preview.classList.remove("hidden");
@@ -796,6 +835,7 @@ $("#f-doc-save").addEventListener("click", () => {
     file: fileValue || null
   };
 
+  if (recordTooBig(record)) return;
   if (editingDocId) {
     const idx = state.docs.findIndex((x) => x.id === editingDocId);
     state.docs[idx] = record;
@@ -840,7 +880,7 @@ function computeMissedEntries(daysBack) {
   for (let i = 0; i < daysBack; i++) {
     const d = new Date(now);
     d.setDate(d.getDate() - i);
-    const dateStr = d.toISOString().slice(0, 10);
+    const dateStr = dateToStr(d);
     state.meds.forEach((m) => {
       (m.heures || []).forEach((h) => {
         const key = `${dateStr}_${m.id}_${h}`;
@@ -929,7 +969,7 @@ function renderAidantMeds() {
   }
   el.innerHTML = state.meds.map((m) => `
     <div class="aidant-item">
-      ${m.foto ? `<img class="med-thumb" src="${m.foto}" alt="Caixa de ${escapeHTML(m.nom)}" />` : ""}
+      ${safeDataUrl(m.foto) ? `<img class="med-thumb" src="${safeDataUrl(m.foto)}" alt="Caixa de ${escapeHTML(m.nom)}" />` : ""}
       <div class="aidant-item-main">
         <strong>${escapeHTML(m.nom)}</strong>
         <span>${m.trata ? escapeHTML(m.trata) + " · " : ""}${(m.heures || []).join(", ") || "Sem horário"}</span>
@@ -993,6 +1033,7 @@ $("#f-rdv-photo").addEventListener("change", async (e) => {
   const file = e.target.files[0];
   if (!file) return;
   const dataUrl = await fileToDataURL(file);
+  if (!dataUrl) { e.target.value = ""; return; }
   const preview = $("#f-rdv-photo-preview");
   preview.innerHTML = filePreviewHTML(dataUrl);
   preview.classList.remove("hidden");
@@ -1004,7 +1045,7 @@ function renderExamesEditor() {
   if (currentExames.length === 0) { el.innerHTML = ""; return; }
   el.innerHTML = currentExames.map((ex, i) => `
     <div class="anexo-chip" data-idx="${i}">
-      ${isPdfData(ex.data) ? "📄" : `<img src="${ex.data}" alt="${escapeHTML(ex.nome || "Exame")}" />`}
+      ${isPdfData(ex.data) ? "📄" : `<img src="${safeDataUrl(ex.data)}" alt="${escapeHTML(ex.nome || "Exame")}" />`}
       <button type="button" data-remove-exame="${i}" aria-label="Remover">✕</button>
     </div>
   `).join("");
@@ -1022,6 +1063,7 @@ $("#f-rdv-exame-input").addEventListener("change", async (e) => {
   const file = e.target.files[0];
   if (!file) return;
   const dataUrl = await fileToDataURL(file);
+  if (!dataUrl) { e.target.value = ""; return; }
   currentExames.push({ nome: file.name, data: dataUrl });
   renderExamesEditor();
   e.target.value = "";
@@ -1049,6 +1091,7 @@ $("#f-rdv-save").addEventListener("click", () => {
     exames: currentExames
   };
 
+  if (recordTooBig(record)) return;
   if (editingRdvId) {
     const idx = state.rdvs.findIndex((x) => x.id === editingRdvId);
     state.rdvs[idx] = record;
@@ -1113,6 +1156,7 @@ $("#f-med-photo").addEventListener("change", async (e) => {
   const file = e.target.files[0];
   if (!file) return;
   const dataUrl = await fileToDataURL(file);
+  if (!dataUrl) { e.target.value = ""; return; }
   const preview = $("#f-med-photo-preview");
   preview.innerHTML = filePreviewHTML(dataUrl);
   preview.classList.remove("hidden");
@@ -1145,6 +1189,7 @@ $("#f-med-save").addEventListener("click", () => {
     heures
   };
 
+  if (recordTooBig(record)) return;
   if (editingMedId) {
     const idx = state.meds.findIndex((x) => x.id === editingMedId);
     state.meds[idx] = record;
@@ -1238,7 +1283,7 @@ function renderEmergencyModal() {
     return;
   }
   el.innerHTML = list.map((c) =>
-    `<a class="emergencia-contact-btn" href="tel:${c.tel.replace(/\s/g, "")}">📞 Ligar a ${escapeHTML(c.nome || "familiar")}</a>`
+    `<a class="emergencia-contact-btn" href="tel:${escapeHTML(String(c.tel).replace(/[^\d+*#]/g, ""))}">📞 Ligar a ${escapeHTML(c.nome || "familiar")}</a>`
   ).join("");
 }
 
@@ -1469,7 +1514,7 @@ $("#setup-patient-submit").addEventListener("click", async () => {
     $("#setup-patient-status").textContent = "✓ Pedido enviado. A aguardar aprovação de um cuidador...";
   } catch (e) {
     console.error(e);
-    $("#setup-patient-status").textContent = "Não foi possível enviar o pedido. Verifica a ligação.";
+    $("#setup-patient-status").textContent = authErrorMessage(e, "Não foi possível enviar o pedido.");
   }
 });
 
@@ -1510,6 +1555,25 @@ $$("[data-toggle-pw]").forEach((btn) => {
   });
 });
 
+/* ---------- Mensagens de erro de autenticação (mostram o motivo real) ---------- */
+function authErrorMessage(e, fallback) {
+  const code = (e && e.code) || "";
+  const map = {
+    "auth/invalid-credential": "Email ou palavra-passe incorretos.",
+    "auth/wrong-password": "Email ou palavra-passe incorretos.",
+    "auth/user-not-found": "Não existe conta com este email. Usa Criar conta.",
+    "auth/invalid-email": "O email não é válido.",
+    "auth/user-disabled": "Esta conta foi desativada.",
+    "auth/too-many-requests": "Demasiadas tentativas. Espera alguns minutos e tenta de novo.",
+    "auth/network-request-failed": "Sem ligação à internet.",
+    "auth/email-already-in-use": "Este email já tem conta — usa Entrar.",
+    "auth/weak-password": "Palavra-passe demasiado fraca (mínimo 6 caracteres).",
+    "auth/operation-not-allowed": "O início de sessão por email não está ativado neste projeto (Firebase → Authentication).",
+    "permission-denied": "Sem permissão no servidor (regras de segurança)."
+  };
+  return map[code] || (fallback + (code ? " (" + code + ")" : ""));
+}
+
 $("#btn-login").addEventListener("click", async () => {
   const email = $("#login-email").value.trim();
   const password = $("#login-password").value;
@@ -1518,7 +1582,8 @@ $("#btn-login").addEventListener("click", async () => {
     await loginCaregiver(email, password);
     $("#auth-status").textContent = "A entrar...";
   } catch (e) {
-    $("#auth-status").textContent = "Não foi possível entrar. Verifica o email e a palavra-passe.";
+    console.error(e);
+    $("#auth-status").textContent = authErrorMessage(e, "Não foi possível entrar.");
   }
 });
 
@@ -1529,7 +1594,7 @@ $("#btn-forgot-password").addEventListener("click", async () => {
     await sendPasswordResetEmail(auth, email);
     $("#auth-status").textContent = "Email enviado — verifica a tua caixa de entrada.";
   } catch (e) {
-    $("#auth-status").textContent = "Não foi possível enviar o email.";
+    $("#auth-status").textContent = authErrorMessage(e, "Não foi possível enviar o email.");
   }
 });
 
@@ -1545,7 +1610,7 @@ $("#btn-signup").addEventListener("click", async () => {
     onFamilyResolved();
   } catch (e) {
     console.error(e);
-    $("#auth-status").textContent = e.code === "auth/email-already-in-use" ? "Este email já tem conta — usa Entrar." : "Não foi possível criar a conta.";
+    $("#auth-status").textContent = authErrorMessage(e, "Não foi possível criar a conta.");
   }
 });
 
@@ -1566,6 +1631,6 @@ $("#btn-caregiver-join").addEventListener("click", async () => {
     $("#auth-status").textContent = "✓ Pedido enviado. A aguardar aprovação de outro cuidador...";
   } catch (e) {
     console.error(e);
-    $("#auth-status").textContent = "Não foi possível enviar o pedido.";
+    $("#auth-status").textContent = authErrorMessage(e, "Não foi possível enviar o pedido.");
   }
 });
