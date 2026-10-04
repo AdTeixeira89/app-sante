@@ -1337,3 +1337,5 @@ button {
 .lang-picker { display: flex; align-items: center; gap: 10px; justify-content: flex-end; margin-bottom: 14px; }
 .lang-picker label { font-size: 0.95rem; color: var(--ink-soft, #5b5348); }
 .lang-select { width: auto; min-width: 140px; }
+
+.danger-text { color: #A32A2A; border-color: #E3B8B8; }

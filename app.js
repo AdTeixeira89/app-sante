@@ -5,11 +5,11 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import {
   getAuth, onAuthStateChanged, signInAnonymously,
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  signOut, sendPasswordResetEmail
+  signOut, sendPasswordResetEmail, deleteUser, reauthenticateWithCredential, EmailAuthProvider
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore, doc, collection, setDoc, updateDoc, deleteDoc, getDoc,
-  onSnapshot, enableIndexedDbPersistence, arrayUnion
+  onSnapshot, enableIndexedDbPersistence, arrayUnion, arrayRemove, getDocs
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -1354,6 +1354,76 @@ deviceLabelInput.addEventListener("change", () => {
   sendPresence();
 });
 
+/* ---------- Eliminar a conta (exigido pelo Google Play) ----------
+   - Se for o único membro da família: apaga todos os dados da família (consultas, medicamentos,
+     documentos, registos, contactos, convites).
+   - Se houver outros membros: sai da família e a família continua para eles.
+   Em ambos os casos apaga o índice do utilizador e a própria conta de início de sessão. */
+async function deleteAllInCollection(colName) {
+  const snap = await getDocs(familyCollection(colName));
+  for (const d of snap.docs) await deleteDoc(d.ref);
+}
+
+async function deleteMyAccount(password) {
+  const user = auth.currentUser;
+  if (!user) throw Object.assign(new Error("no-user"), { code: "auth/no-current-user" });
+
+  // Operação sensível: pede de novo a palavra-passe (contas com email)
+  if (user.email) {
+    const cred = EmailAuthProvider.credential(user.email, password || "");
+    await reauthenticateWithCredential(user, cred);
+  }
+
+  if (familyId) {
+    const famSnap = await getDoc(familyRef());
+    const fam = famSnap.exists() ? famSnap.data() : {};
+    const members = Array.isArray(fam.members) ? fam.members : [];
+    const onlyMe = members.length <= 1;
+
+    try { await deleteDoc(familyRef("presence", deviceId)); } catch (e) { /* ignorar */ }
+    await deleteDoc(doc(db, "userFamilies", user.uid));
+
+    if (onlyMe) {
+      for (const name of ["rdvs", "meds", "docs", "medLog", "presence", "joinRequests", "meta"]) {
+        await deleteAllInCollection(name);
+      }
+      if (fam.inviteCode) { try { await deleteDoc(doc(db, "inviteCodes", fam.inviteCode)); } catch (e) { /* ignorar */ } }
+      await deleteDoc(familyRef());
+    } else {
+      await updateDoc(familyRef(), { members: arrayRemove(user.uid) });
+    }
+  } else {
+    try { await deleteDoc(doc(db, "userFamilies", user.uid)); } catch (e) { /* ignorar */ }
+  }
+
+  await deleteUser(user);
+  [LOCAL_FAMILY_ID_KEY, CAREGIVER_FLAG_KEY, DEVICE_ID_KEY, DEVICE_LABEL_KEY].forEach((k) => localStorage.removeItem(k));
+}
+
+$("#btn-delete-account").addEventListener("click", () => {
+  $("#delete-account-password").value = "";
+  $("#delete-account-status").textContent = "";
+  $("#delete-account-password-wrap").classList.toggle("hidden", !(auth.currentUser && auth.currentUser.email));
+  $("#modal-delete-account").classList.remove("hidden");
+});
+$("#delete-account-cancel").addEventListener("click", () => $("#modal-delete-account").classList.add("hidden"));
+
+$("#delete-account-confirm").addEventListener("click", async () => {
+  const btn = $("#delete-account-confirm");
+  const status = $("#delete-account-status");
+  btn.disabled = true;
+  status.textContent = t("A eliminar...");
+  try {
+    await deleteMyAccount($("#delete-account-password").value);
+    status.textContent = t("Conta eliminada.");
+    setTimeout(() => location.reload(), 800);
+  } catch (e) {
+    console.error(e);
+    btn.disabled = false;
+    status.textContent = authErrorMessage(e, "Não foi possível eliminar a conta.");
+  }
+});
+
 $("#btn-logout").addEventListener("click", async () => {
   await signOut(auth);
   localStorage.removeItem(LOCAL_FAMILY_ID_KEY);
@@ -1610,6 +1680,8 @@ function authErrorMessage(e, fallback) {
     "auth/email-already-in-use": "Este email já tem conta — usa Entrar.",
     "auth/weak-password": "Palavra-passe demasiado fraca (mínimo 6 caracteres).",
     "auth/operation-not-allowed": "O início de sessão por email não está ativado neste projeto (Firebase → Authentication).",
+    "auth/requires-recent-login": "Por segurança, termina a sessão, entra de novo e repete o pedido.",
+    "auth/missing-password": "Escreve a tua palavra-passe para confirmar.",
     "permission-denied": "Sem permissão no servidor (regras de segurança)."
   };
   return t(map[code] || fallback) + (map[code] ? "" : (code ? " (" + code + ")" : ""));

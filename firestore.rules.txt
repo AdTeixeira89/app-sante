@@ -24,12 +24,18 @@ service cloud.firestore {
         && request.resource.data.members[0] == request.auth.uid
         && request.resource.data.ownerUid == request.auth.uid;
 
-      // Um membro pode acrescentar membros e alterar definições, mas nunca remover outros
-      // membros nem mudar o dono da família.
+      // Um membro pode acrescentar membros e alterar definições, ou sair da família (remover-se a si
+      // próprio), mas nunca remover outros membros nem mudar o dono da família.
       allow update: if isMember(familyId)
-        && request.resource.data.members.hasAll(resource.data.members)
-        && request.resource.data.get('ownerUid', null) == resource.data.get('ownerUid', null);
-      allow delete: if false;
+        && request.resource.data.get('ownerUid', null) == resource.data.get('ownerUid', null)
+        && (
+          request.resource.data.members.hasAll(resource.data.members)
+          || (request.resource.data.members.hasAll(resource.data.members.removeAll([request.auth.uid]))
+              && request.resource.data.members.hasOnly(resource.data.members))
+        );
+
+      // Só o último membro pode apagar a família (ao eliminar a própria conta)
+      allow delete: if isMember(familyId) && resource.data.members.size() == 1;
 
       // Pedidos de acesso: qualquer pessoa autenticada pode pedir para si própria;
       // só um membro já aprovado pode ler ou apagar pedidos (aprovar/recusar)
@@ -49,7 +55,8 @@ service cloud.firestore {
     match /inviteCodes/{code} {
       allow get: if isSignedIn();
       allow create: if isMember(request.resource.data.familyId);
-      allow update, delete, list: if false;
+      allow delete: if isMember(resource.data.familyId);
+      allow update, list: if false;
     }
 
     // Índice utilizador -> família (para saber a que família cada conta pertence)
@@ -57,10 +64,12 @@ service cloud.firestore {
       allow read: if isSignedIn() && request.auth.uid == uid;
       // O próprio, para uma família de que já é membro (criação da conta);
       // ou um membro que está a aprovar um pedido de acesso desse utilizador.
-      allow write: if isSignedIn() && isMember(request.resource.data.familyId) && (
+      allow create, update: if isSignedIn() && isMember(request.resource.data.familyId) && (
         request.auth.uid == uid ||
         exists(/databases/$(database)/documents/families/$(request.resource.data.familyId)/joinRequests/$(uid))
       );
+      // O utilizador pode apagar o seu próprio índice (eliminar conta)
+      allow delete: if isSignedIn() && request.auth.uid == uid;
     }
   }
 }

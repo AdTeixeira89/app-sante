@@ -15,6 +15,15 @@ const LANG_KEY = "bussola-lang";
 const TRANSLATIONS = {
   en: {
     "Bússola Saúde": "Bússola Saúde",
+    "Eliminar a minha conta": "Delete my account",
+    "Esta ação é definitiva. Se fores o único membro da família, todos os dados (consultas, medicamentos, documentos e registos) serão apagados. Se houver outros membros, apenas sais da família e eles mantêm os dados.": "This cannot be undone. If you are the only member of the family, all data (appointments, medication, documents and records) will be deleted. If there are other members, you just leave the family and they keep the data.",
+    "Palavra-passe (para confirmar)": "Password (to confirm)",
+    "Eliminar definitivamente": "Delete permanently",
+    "A eliminar...": "Deleting...",
+    "Conta eliminada.": "Account deleted.",
+    "Não foi possível eliminar a conta.": "Could not delete the account.",
+    "Por segurança, termina a sessão, entra de novo e repete o pedido.": "For security, sign out, sign in again and repeat the request.",
+    "Escreve a tua palavra-passe para confirmar.": "Type your password to confirm.",
     "Para lembretes à hora certa, permite os alarmes exatos para esta app.": "For on-time reminders, allow exact alarms for this app.",
     "{nome} das {h} — ainda não confirmado": "{nome} at {h} — not confirmed yet",
     "Consultas, medicamentos e documentos, em família.": "Appointments, medication and documents, together as a family.",
@@ -295,6 +304,15 @@ const TRANSLATIONS = {
 
   fr: {
     "Bússola Saúde": "Bússola Saúde",
+    "Eliminar a minha conta": "Supprimer mon compte",
+    "Esta ação é definitiva. Se fores o único membro da família, todos os dados (consultas, medicamentos, documentos e registos) serão apagados. Se houver outros membros, apenas sais da família e eles mantêm os dados.": "Cette action est définitive. Si vous êtes le seul membre de la famille, toutes les données (rendez-vous, médicaments, documents et historiques) seront supprimées. S'il y a d'autres membres, vous quittez simplement la famille et ils conservent les données.",
+    "Palavra-passe (para confirmar)": "Mot de passe (pour confirmer)",
+    "Eliminar definitivamente": "Supprimer définitivement",
+    "A eliminar...": "Suppression…",
+    "Conta eliminada.": "Compte supprimé.",
+    "Não foi possível eliminar a conta.": "Impossible de supprimer le compte.",
+    "Por segurança, termina a sessão, entra de novo e repete o pedido.": "Par sécurité, déconnectez-vous, reconnectez-vous et recommencez.",
+    "Escreve a tua palavra-passe para confirmar.": "Saisissez votre mot de passe pour confirmer.",
     "Para lembretes à hora certa, permite os alarmes exatos para esta app.": "Pour des rappels à l'heure exacte, autorisez les alarmes exactes pour cette application.",
     "{nome} das {h} — ainda não confirmado": "{nome} de {h} — pas encore confirmé",
     "Consultas, medicamentos e documentos, em família.": "Rendez-vous, médicaments et documents, en famille.",
@@ -573,6 +591,15 @@ const TRANSLATIONS = {
 
   es: {
     "Bússola Saúde": "Bússola Saúde",
+    "Eliminar a minha conta": "Eliminar mi cuenta",
+    "Esta ação é definitiva. Se fores o único membro da família, todos os dados (consultas, medicamentos, documentos e registos) serão apagados. Se houver outros membros, apenas sais da família e eles mantêm os dados.": "Esta acción es definitiva. Si eres el único miembro de la familia, se borrarán todos los datos (citas, medicamentos, documentos y registros). Si hay otros miembros, solo sales de la familia y ellos conservan los datos.",
+    "Palavra-passe (para confirmar)": "Contraseña (para confirmar)",
+    "Eliminar definitivamente": "Eliminar definitivamente",
+    "A eliminar...": "Eliminando…",
+    "Conta eliminada.": "Cuenta eliminada.",
+    "Não foi possível eliminar a conta.": "No se pudo eliminar la cuenta.",
+    "Por segurança, termina a sessão, entra de novo e repete o pedido.": "Por seguridad, cierra sesión, vuelve a iniciarla y repite la solicitud.",
+    "Escreve a tua palavra-passe para confirmar.": "Escribe tu contraseña para confirmar.",
     "Para lembretes à hora certa, permite os alarmes exatos para esta app.": "Para recordatorios puntuales, permite las alarmas exactas para esta aplicación.",
     "{nome} das {h} — ainda não confirmado": "{nome} de las {h} — aún sin confirmar",
     "Consultas, medicamentos e documentos, em família.": "Citas, medicamentos y documentos, en familia.",

@@ -222,6 +222,22 @@
   </div>
 </section>
 
+<!-- ===================== ELIMINAR CONTA ===================== -->
+<div id="modal-delete-account" class="modal hidden">
+  <div class="modal-card">
+    <h2>Eliminar a minha conta</h2>
+    <p class="muted">Esta ação é definitiva. Se fores o único membro da família, todos os dados (consultas, medicamentos, documentos e registos) serão apagados. Se houver outros membros, apenas sais da família e eles mantêm os dados.</p>
+    <label id="delete-account-password-wrap">Palavra-passe (para confirmar)
+      <input id="delete-account-password" type="password" autocomplete="current-password" />
+    </label>
+    <p id="delete-account-status" class="setup-status"></p>
+    <div class="modal-actions">
+      <button id="delete-account-cancel" class="secondary-btn">Cancelar</button>
+      <button id="delete-account-confirm" class="danger-btn">Eliminar definitivamente</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===================== FICHA DE UM MEDICAMENTO ===================== -->
 <div id="modal-info" class="modal hidden">
   <div class="modal-card">
@@ -352,6 +368,7 @@
         <input id="device-label" type="text" placeholder="Ex.: Telemóvel do Papa" />
       </label>
       <button id="btn-logout" class="ghost-btn small">Sair da conta neste aparelho</button>
+      <button id="btn-delete-account" class="ghost-btn small danger-text">Eliminar a minha conta</button>
     </div>
     <div class="settings-card">
       <h3>Pedidos de acesso</h3>
