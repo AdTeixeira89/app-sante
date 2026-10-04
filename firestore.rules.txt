@@ -6,9 +6,12 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function familyDoc(familyId) {
+      return get(/databases/$(database)/documents/families/$(familyId));
+    }
+
     function isMember(familyId) {
-      return isSignedIn() &&
-        request.auth.uid in get(/databases/$(database)/documents/families/$(familyId)).data.members;
+      return isSignedIn() && request.auth.uid in familyDoc(familyId).data.members;
     }
 
     // Documento da própria família
@@ -21,7 +24,11 @@ service cloud.firestore {
         && request.resource.data.members[0] == request.auth.uid
         && request.resource.data.ownerUid == request.auth.uid;
 
-      allow update: if isMember(familyId);
+      // Um membro pode acrescentar membros e alterar definições, mas nunca remover outros
+      // membros nem mudar o dono da família.
+      allow update: if isMember(familyId)
+        && request.resource.data.members.hasAll(resource.data.members)
+        && request.resource.data.get('ownerUid', null) == resource.data.get('ownerUid', null);
       allow delete: if false;
 
       // Pedidos de acesso: qualquer pessoa autenticada pode pedir para si própria;
@@ -37,19 +44,23 @@ service cloud.firestore {
       }
     }
 
-    // Códigos de convite: pesquisáveis por qualquer pessoa autenticada,
-    // mas nunca listáveis (impede varrer todos os códigos existentes)
+    // Códigos de convite: pesquisáveis por qualquer pessoa autenticada (um a um),
+    // nunca listáveis. Só um membro da família pode registar um código para ela.
     match /inviteCodes/{code} {
       allow get: if isSignedIn();
-      allow create: if isSignedIn();
-      allow list: if false;
+      allow create: if isMember(request.resource.data.familyId);
+      allow update, delete, list: if false;
     }
 
     // Índice utilizador -> família (para saber a que família cada conta pertence)
     match /userFamilies/{uid} {
       allow read: if isSignedIn() && request.auth.uid == uid;
-      allow write: if isSignedIn() &&
-        (request.auth.uid == uid || isMember(request.resource.data.familyId));
+      // O próprio, para uma família de que já é membro (criação da conta);
+      // ou um membro que está a aprovar um pedido de acesso desse utilizador.
+      allow write: if isSignedIn() && isMember(request.resource.data.familyId) && (
+        request.auth.uid == uid ||
+        exists(/databases/$(database)/documents/families/$(request.resource.data.familyId)/joinRequests/$(uid))
+      );
     }
   }
 }
