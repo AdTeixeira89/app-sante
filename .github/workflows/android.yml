@@ -39,7 +39,7 @@ jobs:
       - name: Guardar o APK de teste
         uses: actions/upload-artifact@v4
         with:
-          name: bussola-saude-debug-apk
+          name: kinly-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
 
@@ -64,5 +64,5 @@ jobs:
           KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         uses: actions/upload-artifact@v4
         with:
-          name: bussola-saude-release-aab
+          name: kinly-release-aab
           path: android/app/build/outputs/bundle/release/app-release.aab

@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace "com.adteixeira.bussolasaude"
+    namespace "com.adteixeira.kinly"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.adteixeira.bussolasaude"
+        applicationId "com.adteixeira.kinly"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

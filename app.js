@@ -1216,7 +1216,7 @@ $("#btn-export").addEventListener("click", () => {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "bussola-saude-exportacao.json";
+  a.download = "kinly-export.json";
   a.click();
   URL.revokeObjectURL(url);
 });

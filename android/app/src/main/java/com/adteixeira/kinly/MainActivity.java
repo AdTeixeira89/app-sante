@@ -1,4 +1,4 @@
-package com.adteixeira.bussolasaude;
+package com.adteixeira.kinly;
 
 import com.getcapacitor.BridgeActivity;
 

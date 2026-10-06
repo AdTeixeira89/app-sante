@@ -1,6 +1,6 @@
 {
-  "appId": "com.adteixeira.bussolasaude",
-  "appName": "Bússola Saúde",
+  "appId": "com.adteixeira.kinly",
+  "appName": "Kinly",
   "webDir": "www",
   "android": {
     "allowMixedContent": false

@@ -1,4 +1,4 @@
-const CACHE_NAME = "bussola-saude-v4";
+const CACHE_NAME = "kinly-v5";
 const FILES_TO_CACHE = [
   "./index.html",
   "./style.css",

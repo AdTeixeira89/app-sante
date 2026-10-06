@@ -1,6 +1,7 @@
 {
-  "name": "Bússola Saúde",
-  "short_name": "Bússola",
+  "name": "Kinly",
+  "lang": "en",
+  "short_name": "Kinly",
   "description": "Consultas, documentos e medicamentos, tudo no mesmo lugar.",
   "start_url": "./index.html",
   "display": "standalone",

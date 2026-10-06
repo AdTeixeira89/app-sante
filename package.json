@@ -1,8 +1,8 @@
 {
-  "name": "bussola-saude",
+  "name": "kinly",
   "version": "1.0.0",
   "private": true,
-  "description": "B\u00fassola Sa\u00fade \u2014 appointments, medication and documents for families",
+  "description": "Kinly — appointments, medication and documents for families",
   "scripts": {
     "build:web": "node scripts/build-web.mjs",
     "sync": "npm run build:web && npx cap sync android",
