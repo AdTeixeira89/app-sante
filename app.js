@@ -356,7 +356,7 @@ function renderGreeting() {
   const nome = state.perfil && state.perfil.nome;
   const dateLabel = capitalize(new Date().toLocaleDateString(getLocale(), { weekday: "long", day: "numeric", month: "long" }));
   el.innerHTML = nome
-    ? `${escapeHTML(t("Olá, {nome} 👋", { nome }))}<span class="greeting-date">${dateLabel}</span>`
+    ? `${escapeHTML(t("Olá, {nome}", { nome }))}<span class="greeting-date">${dateLabel}</span>`
     : `<span class="greeting-date">${dateLabel}</span>`;
 }
 
@@ -407,8 +407,8 @@ function renderNextTicket() {
       <div><span>${t("Data")}</span>${capitalize(formatDatePT(r.date))}</div>
       <div><span>${t("Hora")}</span>${r.heure || "—"}</div>
     </div>
-    ${r.lieu ? `<button class="rdv-card-address" style="color:var(--amber);margin-top:14px;background:none;border:none;padding:0;font-family:inherit;cursor:pointer;" data-nav="${escapeHTML(r.lieu)}">🗺️ ${escapeHTML(t("Ver itinerário — {lieu}", { lieu: r.lieu }))}</button>` : ""}
-    ${r.precisaLevarExames && r.levarExamesTexto ? `<div class="rdv-card-levar" style="margin-top:10px;">📎 <strong>${t("Levar:")}</strong> ${escapeHTML(r.levarExamesTexto)}</div>` : ""}
+    ${r.lieu ? `<button class="ticket-directions" data-nav="${escapeHTML(r.lieu)}">${escapeHTML(t("Ver itinerário — {lieu}", { lieu: r.lieu }))}</button>` : ""}
+    ${r.precisaLevarExames && r.levarExamesTexto ? `<div class="rdv-card-levar"><strong>${t("Levar:")}</strong> ${escapeHTML(r.levarExamesTexto)}</div>` : ""}
   `;
 }
 
@@ -426,7 +426,7 @@ function renderHomeMissedMeds() {
   });
   if (missed.length === 0) { el.innerHTML = ""; return; }
   el.innerHTML = missed.map((m) =>
-    `<div class="missed-chip">🔴 ${escapeHTML(t("{nome} das {h} — ainda não confirmado", { nome: m.nome, h: m.heure }))}</div>`
+    `<div class="missed-chip"><span class="missed-dot" aria-hidden="true"></span>${escapeHTML(t("{nome} das {h} — ainda não confirmado", { nome: m.nome, h: m.heure }))}</div>`
   ).join("");
 }
 
@@ -585,7 +585,7 @@ function renderTodayMeds() {
             <div class="med-card-time">${s.heure}</div>
             <div class="med-card-name">${escapeHTML(s.nom)}</div>
           </div>
-          <button class="med-info-btn" data-info-med="${s.medId}" aria-label="${t("Mais informação")}">ℹ️</button>
+          <button class="med-info-btn" data-info-med="${s.medId}" aria-label="${t("Mais informação")}">i</button>
         </div>
         ${actionsHTML}
       </div>
@@ -647,17 +647,27 @@ $$("[data-rdvtab]").forEach((btn) => {
 
 function rdvCardHTML(r) {
   const exames = r.exames || [];
+  const d = new Date(r.date + "T00:00:00");
+  const monthShort = d.toLocaleDateString(getLocale(), { month: "short" }).replace(".", "");
+  const dayNum = d.getDate();
   return `
-    <div class="rdv-card">
-      <div class="rdv-card-date">${capitalize(formatDatePT(r.date))}${r.heure ? " · " + r.heure : ""}</div>
-      <div class="rdv-card-medecin">${escapeHTML(r.medecin || t("Consulta"))}</div>
-      ${r.motif ? `<div class="rdv-card-motif">${escapeHTML(r.motif)}</div>` : ""}
-      ${r.lieu ? `<button class="rdv-card-address" style="background:none;border:none;padding:0;font-family:inherit;cursor:pointer;" data-nav="${escapeHTML(r.lieu)}">🗺️ ${escapeHTML(r.lieu)}</button>` : ""}
-      ${r.perguntas ? `<div class="rdv-card-perguntas">📝 <strong>${t("Perguntas ao médico:")}</strong> ${escapeHTML(r.perguntas)}</div>` : ""}
-      ${r.precisaLevarExames && r.levarExamesTexto ? `<div class="rdv-card-levar">📎 <strong>${t("Levar:")}</strong> ${escapeHTML(r.levarExamesTexto)}</div>` : ""}
-      ${r.photo ? fileThumbHTML(r.photo, t("Documento da consulta")) : ""}
-      ${exames.length ? `<div class="rdv-card-lieu">${t("{n} exame(s) anexado(s)", { n: exames.length })}</div>
-        <div class="anexos-list">${exames.map((ex) => `<div class="anexo-chip">${isPdfData(ex.data) ? "📄" : `<img src="${safeDataUrl(ex.data)}" alt="${escapeHTML(ex.nome || t("Exame"))}" />`}</div>`).join("")}</div>` : ""}
+    <div class="rdv-card rdv-card-v2">
+      <div class="rdv-badge" aria-hidden="true">
+        <span class="rdv-badge-month">${escapeHTML(monthShort)}</span>
+        <span class="rdv-badge-day">${dayNum}</span>
+        <span class="rdv-badge-time">${escapeHTML(r.heure || "")}</span>
+      </div>
+      <div class="rdv-card-body">
+        <div class="rdv-card-date sr-only">${capitalize(formatDatePT(r.date))}${r.heure ? " · " + r.heure : ""}</div>
+        <div class="rdv-card-medecin">${escapeHTML(r.medecin || t("Consulta"))}</div>
+        ${r.motif ? `<div class="rdv-card-motif">${escapeHTML(r.motif)}</div>` : ""}
+        ${r.lieu ? `<button class="rdv-card-address" style="background:none;border:none;padding:0;font-family:inherit;cursor:pointer;" data-nav="${escapeHTML(r.lieu)}">${escapeHTML(r.lieu)}</button>` : ""}
+        ${r.precisaLevarExames && r.levarExamesTexto ? `<div class="rdv-card-levar"><strong>${t("Levar:")}</strong> ${escapeHTML(r.levarExamesTexto)}</div>` : ""}
+        ${r.perguntas ? `<div class="rdv-card-perguntas"><strong>${t("Perguntas ao médico:")}</strong> ${escapeHTML(r.perguntas)}</div>` : ""}
+        ${r.photo ? fileThumbHTML(r.photo, t("Documento da consulta")) : ""}
+        ${exames.length ? `<div class="rdv-card-lieu">${t("{n} exame(s) anexado(s)", { n: exames.length })}</div>
+          <div class="anexos-list">${exames.map((ex) => `<div class="anexo-chip">${isPdfData(ex.data) ? "📄" : `<img src="${safeDataUrl(ex.data)}" alt="${escapeHTML(ex.nome || t("Exame"))}" />`}</div>`).join("")}</div>` : ""}
+      </div>
     </div>
   `;
 }

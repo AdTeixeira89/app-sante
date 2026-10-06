@@ -1339,3 +1339,282 @@ button {
 .lang-select { width: auto; min-width: 140px; }
 
 .danger-text { color: #A32A2A; border-color: #E3B8B8; }
+
+/* =====================================================================
+   Kinly UI v2 — visual refresh (appearance only; structure and IDs unchanged)
+   Warm paper, forest green, Atkinson Hyperlegible, 44px+ touch targets
+   ===================================================================== */
+:root {
+  --ink: #16243F;
+  --paper: #FAF7F2;
+  --forest: #2B6B58;
+  --forest-dark: #1F5646;
+  --forest-soft: #E3F0EA;
+  --amber: #E3A23A;
+  --amber-dark: #7A4E0E;
+  --amber-soft: #FBEFD6;
+  --clay: #B5573A;
+  --clay-dark: #9A4426;
+  --clay-soft: #F7E6DF;
+  --danger: #B8372F;
+  --danger-ink: #A82F28;
+  --danger-soft: #FCE8E6;
+  --line: #E6DFD2;
+  --line-strong: #D9D0BF;
+  --muted: #566074;
+  --sand: #EFE8DA;
+  --radius: 22px;
+  --shadow-sm: 0 1px 2px rgba(22, 36, 63, 0.05);
+}
+
+body { background-image: none; background-color: var(--paper); }
+.home-sunburst { display: none; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
+/* ---------- Header ---------- */
+.pere-header { padding: 16px 20px 6px; }
+.brand-mark { width: 30px; height: 30px; color: var(--forest); flex-shrink: 0; }
+.setup-brand .brand-mark { width: 40px; height: 40px; }
+.brand-name { font-size: calc(26px * var(--zoom)); letter-spacing: -0.01em; }
+.icon-btn {
+  width: 48px; height: 48px; border: 1.5px solid #E2DACB;
+  color: var(--ink); font-weight: 700;
+}
+
+.emergency-btn-top {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: calc(100% - 40px); margin: 16px 20px 0; min-height: 52px;
+  background: var(--danger-soft); color: var(--danger-ink);
+  border: 1.5px solid #E7B9B4; border-radius: 16px;
+  font-size: calc(17px * var(--zoom)); padding: 0 16px;
+}
+
+.home-greeting {
+  padding: 12px 24px 0; font-size: calc(34px * var(--zoom)); line-height: 1.1;
+}
+.home-greeting .greeting-date { font-size: calc(17px * var(--zoom)); margin-top: 4px; }
+
+/* ---------- Next appointment card ---------- */
+.ticket {
+  margin: 16px 20px 0; background: var(--forest); color: #fff;
+  border-radius: 24px; padding: 22px 22px 20px;
+  box-shadow: 0 10px 28px rgba(43, 107, 88, 0.28);
+}
+.ticket::before, .ticket::after { display: none; }
+.ticket-eyebrow { color: #CFE7DC; letter-spacing: 0.12em; margin-bottom: 8px; }
+.ticket-title { font-size: calc(28px * var(--zoom)); line-height: 1.15; }
+.ticket-sub { color: #E4F2EB; opacity: 1; margin-bottom: 14px; }
+.ticket-meta { gap: 10px; flex-wrap: wrap; padding-top: 0; }
+.ticket-meta div {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(255, 255, 255, 0.16); border-radius: 999px;
+  padding: 9px 14px; font-size: calc(16px * var(--zoom)); font-weight: 700;
+}
+.ticket-meta div span {
+  position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0);
+}
+.ticket-meta div::before {
+  content: ""; width: 18px; height: 18px; flex-shrink: 0;
+  background-repeat: no-repeat; background-size: contain;
+}
+.ticket-meta div:nth-child(1)::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4.5' width='18' height='16.5' rx='3'/%3E%3Cpath d='M3 9.5h18M8 3v4M16 3v4'/%3E%3C/svg%3E");
+}
+.ticket-meta div:nth-child(2)::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E");
+}
+.ticket .ticket-directions {
+  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 48px;
+  margin-top: 14px; padding: 0 16px; border: 0; border-radius: 14px;
+  background: #fff; color: var(--forest-dark); text-align: left;
+  font-size: calc(16px * var(--zoom)); font-weight: 700;
+}
+.ticket .ticket-directions::before {
+  content: ""; width: 20px; height: 20px; flex-shrink: 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231F5646' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z'/%3E%3Ccircle cx='12' cy='9.5' r='2.5'/%3E%3C/svg%3E") no-repeat center / contain;
+}
+.ticket .rdv-card-levar {
+  background: rgba(255, 255, 255, 0.14); color: #fff; border-left: 0;
+  border-radius: 12px; margin-top: 12px; font-size: calc(16px * var(--zoom));
+}
+.ticket-empty { font-size: calc(20px * var(--zoom)); padding: 8px 0; }
+
+/* ---------- Missed medication ---------- */
+.home-missed { margin: 14px 20px 0; }
+.missed-chip {
+  background: var(--danger-soft); border: 0; border-radius: 14px; color: var(--danger-ink);
+  font-size: calc(16px * var(--zoom)); padding: 12px 14px;
+}
+.missed-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--danger); flex-shrink: 0; }
+
+/* ---------- Big navigation buttons ---------- */
+.big-nav { gap: 12px; padding: 16px 20px 40px; }
+.big-btn {
+  min-height: 76px; padding: 10px 18px 10px 10px; gap: 16px;
+  border: 1.5px solid var(--line); border-radius: 22px;
+  font-size: calc(20px * var(--zoom)); box-shadow: var(--shadow-sm);
+}
+.big-btn::after {
+  content: ""; width: 22px; height: 22px; margin-left: auto; flex-shrink: 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238A8274' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 6l6 6-6 6'/%3E%3C/svg%3E") no-repeat center / contain;
+}
+.big-btn-primary { border: 1.5px solid var(--line); }
+.big-btn-icon { width: 56px; height: 56px; border-radius: 18px; font-size: 0; }
+.big-btn-icon svg { width: 28px; height: 28px; }
+.big-nav .big-btn:nth-child(1) .big-btn-icon { background: var(--forest-soft); color: var(--forest); }
+.big-nav .big-btn:nth-child(2) .big-btn-icon { background: var(--amber-soft); color: var(--amber-dark); }
+.big-nav .big-btn:nth-child(3) .big-btn-icon { background: var(--clay-soft); color: var(--clay-dark); }
+
+/* ---------- Sub screens ---------- */
+.sub-header { gap: 12px; padding: 16px 20px 12px; }
+.sub-header h1 { font-size: calc(28px * var(--zoom)); line-height: 1.1; }
+.back-btn { width: 48px; height: 48px; border: 1.5px solid #E2DACB; flex-shrink: 0; }
+.content-scroll { gap: 14px; }
+
+/* ---------- Tabs ---------- */
+.aidant-tabs { overflow-x: auto; scrollbar-width: none; padding-bottom: 14px; }
+.aidant-tabs::-webkit-scrollbar { display: none; }
+.tab-btn {
+  flex: 0 0 auto; min-height: 44px; padding: 0 18px; border-radius: 999px;
+  border: 1.5px solid #E2DACB; color: #3C465A; font-size: calc(16px * var(--zoom)); white-space: nowrap;
+}
+.tab-btn.active { background: var(--ink); border-color: var(--ink); color: #fff; }
+
+/* ---------- Appointment & document cards ---------- */
+.rdv-card, .doc-card {
+  border: 1.5px solid var(--line); border-radius: 22px; padding: 16px; box-shadow: var(--shadow-sm);
+}
+.rdv-card-v2 { display: flex; gap: 16px; }
+.rdv-badge {
+  width: 64px; flex-shrink: 0; align-self: flex-start; border-radius: 16px;
+  background: var(--forest); color: #fff; padding: 10px 0;
+  display: flex; flex-direction: column; align-items: center; line-height: 1.1;
+}
+.rdv-badge-month { font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #CFE7DC; }
+.rdv-badge-day { font-size: 32px; font-weight: 700; line-height: 1; margin: 2px 0; }
+.rdv-badge-time { font-size: 13px; font-weight: 700; color: #CFE7DC; }
+.rdv-card-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.rdv-card-medecin { font-family: var(--font-body); font-weight: 700; font-size: calc(21px * var(--zoom)); line-height: 1.2; }
+.rdv-card-motif { font-size: calc(16px * var(--zoom)); }
+.rdv-card-address {
+  min-height: 44px; margin-top: 0; font-size: calc(16px * var(--zoom)); color: var(--forest-dark);
+}
+.rdv-card-address::before {
+  content: ""; width: 20px; height: 20px; flex-shrink: 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231F5646' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z'/%3E%3Ccircle cx='12' cy='9.5' r='2.5'/%3E%3C/svg%3E") no-repeat center / contain;
+}
+.rdv-card-levar {
+  background: var(--amber-soft); color: #5E3C08; border-left: 0; border-radius: 12px;
+  font-size: calc(16px * var(--zoom)); padding: 10px 12px; margin-top: 4px;
+}
+.rdv-card-perguntas { font-size: calc(16px * var(--zoom)); margin-top: 4px; }
+.doc-action-btn { min-height: 44px; border: 1.5px solid var(--line-strong); background: #fff; font-size: calc(14px * var(--zoom)); border-radius: 12px; }
+
+/* ---------- Medication cards ---------- */
+.med-card {
+  border: 1.5px solid var(--line); border-left: 6px solid var(--line);
+  border-radius: 22px; padding: 16px; gap: 14px; box-shadow: var(--shadow-sm);
+}
+.med-card.status-late { background: #fff; border-left-color: var(--danger); }
+.med-card.status-done { opacity: 1; }
+.med-card-info { gap: 14px; }
+.med-card-text { flex-direction: column; align-items: flex-start; gap: 2px; }
+.med-card-time { font-size: calc(30px * var(--zoom)); line-height: 1; font-variant-numeric: tabular-nums; color: var(--ink); }
+.med-card.status-late .med-card-time { color: var(--danger-ink); }
+.med-card-name { font-size: calc(21px * var(--zoom)); font-weight: 700; line-height: 1.2; }
+.med-thumb { width: 56px; height: 56px; border-radius: 14px; }
+.med-info-btn {
+  width: 44px; height: 44px; border: 1.5px solid #E2DACB; background: #fff; color: var(--muted);
+  font-size: calc(18px * var(--zoom)); font-weight: 700;
+}
+.med-btn { min-height: 52px; padding: 0 6px; border-radius: 14px; font-size: calc(16px * var(--zoom)); }
+.med-btn-skip { background: #fff; color: #3C465A; border: 1.5px solid var(--line-strong); }
+.med-btn-ontime { background: var(--forest-soft); color: var(--forest-dark); border: 1.5px solid var(--forest); }
+.med-btn-now { background: var(--forest); color: #fff; }
+.med-card-status { border-radius: 14px; padding: 10px 14px; font-size: calc(17px * var(--zoom)); }
+.med-card-status.status-skip { background: var(--sand); color: #3C465A; }
+.med-card-edit {
+  min-height: 44px; padding: 0 14px; border: 1.5px solid #9CC5B5; background: #fff;
+  border-radius: 12px; text-decoration: none; color: var(--forest-dark); font-size: calc(15px * var(--zoom));
+}
+.hist-item { border: 1.5px solid var(--line); border-left: 6px solid var(--line); border-radius: 16px; }
+.hist-item.hist-missed { background: var(--danger-soft); }
+
+/* ---------- Caregiver lists, settings, forms ---------- */
+.aidant-item { border: 1.5px solid var(--line); border-radius: 18px; padding: 12px 12px 12px 16px; }
+.aidant-item-main strong { font-size: calc(18px * var(--zoom)); }
+.aidant-item-main span { font-size: calc(15px * var(--zoom)); }
+.edit-link {
+  min-height: 44px; padding: 0 16px; border: 1.5px solid var(--line-strong); background: #fff;
+  border-radius: 12px; color: var(--ink); font-size: calc(16px * var(--zoom));
+}
+.add-btn {
+  border: 0; background: var(--forest); color: #fff; border-radius: 16px; min-height: 54px;
+  font-size: calc(18px * var(--zoom)); box-shadow: 0 6px 16px rgba(43, 107, 88, 0.25);
+}
+.settings-card { border: 1.5px solid var(--line); border-radius: 22px; padding: 18px; }
+.settings-card h3 { font-size: calc(22px * var(--zoom)); margin-bottom: 8px; }
+.family-code-box { border: 2px dashed #8DB8A8; background: #F0F7F3; border-radius: 16px; }
+.family-code-box span { font-family: var(--font-body); font-weight: 700; font-size: calc(28px * var(--zoom)); letter-spacing: 0.22em; color: var(--forest-dark); }
+
+.primary-btn { border-radius: 14px; min-height: 52px; }
+.secondary-btn { border-radius: 14px; min-height: 46px; }
+.secondary-btn.small { min-height: 44px; padding: 0 18px; }
+.ghost-btn { border: 1.5px solid var(--line-strong); border-radius: 14px; min-height: 46px; }
+.ghost-btn.small { min-height: 46px; padding: 0 16px; }
+.danger-btn { border: 1.5px solid #E7B9B4; border-radius: 14px; min-height: 46px; color: var(--danger-ink); }
+.danger-text { color: var(--danger-ink); border-color: #E7B9B4; }
+
+.modal-card { border-radius: 26px 26px 0 0; background: var(--paper); }
+.modal-card input, .modal-card select, .modal-card textarea {
+  border: 1.5px solid var(--line-strong); border-radius: 14px; min-height: 48px; background: #fff;
+}
+.field-input { border: 1.5px solid var(--line-strong); border-radius: 14px; min-height: 50px; background: #fff; }
+.pin-input { border: 1.5px solid var(--line-strong); }
+
+/* ---------- Welcome / sign-in ---------- */
+.setup-tagline { font-size: calc(18px * var(--zoom)); line-height: 1.4; }
+.setup-card { border-radius: 26px; border: 1.5px solid var(--line); box-shadow: 0 12px 30px rgba(22, 36, 63, 0.08); }
+.setup-card-title { font-size: calc(26px * var(--zoom)); }
+.setup-card-subtitle { font-size: calc(16px * var(--zoom)); }
+.choice-btn {
+  min-height: 88px; padding: 12px 18px 12px 12px; gap: 16px; background: #fff;
+  border: 1.5px solid var(--line); border-radius: 22px; box-shadow: var(--shadow-sm);
+}
+.choice-btn:nth-of-type(1) .choice-btn-icon { background: var(--amber-soft); color: var(--amber-dark); }
+.choice-btn:nth-of-type(2) { border: 2px solid var(--forest); }
+.choice-btn:nth-of-type(2) .choice-btn-icon { background: var(--forest-soft); color: var(--forest); }
+.choice-btn-icon { width: 60px; height: 60px; border-radius: 18px; box-shadow: none; font-size: 0; }
+.choice-btn-icon svg { width: 30px; height: 30px; }
+.choice-btn-text strong { font-size: calc(20px * var(--zoom)); }
+.choice-btn-text span { font-size: calc(16px * var(--zoom)); }
+.auth-tab { min-height: 44px; font-size: calc(15px * var(--zoom)); }
+.lang-picker label { font-size: 15px; color: var(--muted); }
+.lang-select { min-height: 44px; border-radius: 999px; padding: 0 14px; font-weight: 700; }
+
+/* ---------- Forms inside settings cards (were unstyled native fields) ---------- */
+.settings-card label {
+  display: block; font-size: calc(15px * var(--zoom)); font-weight: 700; color: var(--ink); margin: 14px 0 6px;
+}
+.settings-card input:not([type="checkbox"]):not([type="radio"]),
+.settings-card select,
+.settings-card textarea {
+  display: block; width: 100%; min-height: 48px; padding: 10px 14px;
+  border: 1.5px solid var(--line-strong); border-radius: 14px; background: #fff;
+  font-family: inherit; font-size: calc(17px * var(--zoom)); color: var(--ink);
+}
+.settings-card input:focus, .settings-card select:focus, .settings-card textarea:focus {
+  outline: none; border-color: var(--forest);
+}
+.settings-card .perfil-grid { gap: 10px; }
+.settings-card .perfil-grid label { margin-top: 10px; }
+.settings-card .perfil-grid input, .settings-card .perfil-grid select { padding: 10px 8px; }
+.settings-card .secondary-btn, .settings-card .ghost-btn { margin-top: 14px; }
+.settings-card .ghost-btn.small { margin-right: 8px; }
+.family-code-box + label { margin-top: 12px; }
+.ticket-meta div { padding: 8px 12px; gap: 6px; }
+.home-greeting .greeting-date { text-transform: none; }
