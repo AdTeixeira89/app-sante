@@ -1618,3 +1618,12 @@ body { background-image: none; background-color: var(--paper); }
 .family-code-box + label { margin-top: 12px; }
 .ticket-meta div { padding: 8px 12px; gap: 6px; }
 .home-greeting .greeting-date { text-transform: none; }
+
+/* ---------- Touch targets (>= 44px) found by the mobile audit ---------- */
+.link-btn { min-height: 44px; font-size: calc(15px * var(--zoom)); padding-top: 10px; padding-bottom: 10px; }
+.field-with-toggle .field-input { padding-right: 52px; }
+.field-toggle { width: 44px; height: 44px; right: 2px; font-size: calc(18px * var(--zoom)); }
+.heure-chip { padding: 2px 2px 2px 10px; }
+.heure-chip input { min-height: 44px; font-size: 16px; }
+.heure-chip button { min-width: 44px; min-height: 44px; font-size: calc(18px * var(--zoom)); }
+.anexo-chip button::before { content: ""; position: absolute; inset: -12px; }

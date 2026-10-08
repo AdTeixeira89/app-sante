@@ -335,9 +335,11 @@ function checkPin() {
 }
 
 /* Separadores da área do cuidador */
-$$(".tab-btn").forEach((btn) => {
+// Só os separadores com data-tab (área do cuidador): os separadores "Passadas" e os filtros de
+// documentos também usam .tab-btn mas têm o seu próprio tratamento.
+$$(".tab-btn[data-tab]").forEach((btn) => {
   btn.addEventListener("click", () => {
-    $$(".tab-btn").forEach((b) => b.classList.remove("active"));
+    $$(".tab-btn[data-tab]").forEach((b) => b.classList.remove("active"));
     $$(".tab-panel").forEach((p) => p.classList.add("hidden"));
     btn.classList.add("active");
     $("#" + btn.dataset.tab).classList.remove("hidden");
