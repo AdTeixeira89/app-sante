@@ -11,6 +11,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      # Os "secrets" não podem ser lidos diretamente numa condição "if": passam por uma variável do job.
+      KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
     steps:
       - uses: actions/checkout@v4
 
@@ -47,8 +50,6 @@ jobs:
       # em Settings → Secrets and variables → Actions).
       - name: Compilar pacote assinado (release, .aab)
         if: ${{ env.KEYSTORE_B64 != '' }}
-        env:
-          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         working-directory: android
         run: |
           echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
@@ -58,10 +59,14 @@ jobs:
             -Pandroid.injected.signing.key.alias="${{ secrets.ANDROID_KEY_ALIAS }}" \
             -Pandroid.injected.signing.key.password="${{ secrets.ANDROID_KEY_PASSWORD }}"
 
+      - name: Verificar a assinatura do pacote (impressão digital do certificado)
+        if: ${{ env.KEYSTORE_B64 != '' }}
+        run: |
+          keytool -printcert -jarfile android/app/build/outputs/bundle/release/app-release.aab | tee "$RUNNER_TEMP/cert.txt"
+          grep -q "SHA256:" "$RUNNER_TEMP/cert.txt"
+
       - name: Guardar o pacote assinado
         if: ${{ env.KEYSTORE_B64 != '' }}
-        env:
-          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         uses: actions/upload-artifact@v4
         with:
           name: kinly-release-aab
