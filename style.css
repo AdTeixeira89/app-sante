@@ -1642,6 +1642,7 @@ body { background-image: none; background-color: var(--paper); }
 .settings-card .ghost-btn.small { margin-right: 8px; }
 .family-code-box + label { margin-top: 12px; }
 .home-greeting .greeting-date { text-transform: none; }
+.rdv-card-date { text-transform: none; }
 
 /* ---------- Touch targets (>= 44px) found by the mobile audit ---------- */
 .link-btn { min-height: 44px; font-size: calc(15px * var(--zoom)); padding-top: 10px; padding-bottom: 10px; }
